@@ -103,7 +103,6 @@
 
 <div class="main">
 
-  <!-- ✅ FIX: API URL now points to Railway by default -->
   <div class="config-bar">
     <span class="config-label">API URL</span>
     <input class="config-input" id="apiUrl" type="text"
@@ -142,6 +141,23 @@
     </div>
   </div>
 
+  <!-- QUICK TESTS -->
+  <div class="quick-section">
+    <h3>⚡ Quick Tests</h3>
+    <div class="quick-grid">
+      <button class="quick-btn" onclick="quickSend('Do you have any IT courses?')">IT Courses</button>
+      <button class="quick-btn" onclick="quickSend('What accounting courses do you offer?')">Accounting</button>
+      <button class="quick-btn" onclick="quickSend('I want to work in healthcare, what courses suit me?')">Healthcare</button>
+      <button class="quick-btn" onclick="quickSend('What business management courses are available?')">Business</button>
+      <button class="quick-btn" onclick="quickSend('Do you have cyber security courses?')">Cyber Security</button>
+      <button class="quick-btn" onclick="quickSend('What Level 3 courses do you have?')">Level 3</button>
+      <button class="quick-btn" onclick="quickSend('I want to become a teacher, what do I need?')">Teaching</button>
+      <button class="quick-btn" onclick="quickSend('What are the entry requirements for Level 4?')">Entry Requirements</button>
+      <button class="quick-btn" onclick="quickSend('How long does a Level 5 course take?')">Course Duration</button>
+      <button class="quick-btn" onclick="quickSend('What career paths can I take after Level 3 Business?')">Career Paths</button>
+    </div>
+  </div>
+
   <!-- LOG -->
   <div class="history-section">
     <div class="history-header">
@@ -176,12 +192,29 @@
   function removeEmpty() { const e=document.getElementById('emptyState'); if(e)e.remove(); }
 
   function formatBotText(text) {
+    // 1. Escape HTML to prevent XSS
     text=text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    text=text.replace(/(https?:\/\/[^\s<>"]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:#1a56db;text-decoration:underline;word-break:break-all;">$1</a>');
+
+    // 2. Make URLs clickable
+    text=text.replace(/(https?:\/\/[^\s<>"]+)/g,
+      '<a href="$1" target="_blank" rel="noopener" style="color:#1a56db;text-decoration:underline;word-break:break-all;">$1</a>');
+
+    // 3. Style divider lines
     text=text.replace(/─{6,}/g,'<div style="border-top:1px solid #e0e0e0;margin:8px 0;"></div>');
     text=text.replace(/═{3,}/g,'<div style="border-top:2px solid #e8a623;margin:8px 0;"></div>');
+
+    // 4. ✅ Bold course name after 📘 emoji
+    text=text.replace(/📘 ([^\n<]+)/g,
+      '📘 <strong style="font-weight:700;color:#0f1f3d;font-size:0.92rem;">$1</strong>');
+
+    // 5. Bold field labels
+    text=text.replace(/(Overview:|Duration:|Best for:|Entry Requirements:|Career Paths:)/g,
+      '<strong style="font-weight:700;color:#0f1f3d;">$1</strong>');
+
+    // 6. Line breaks
     text=text.replace(/\n\n/g,'<br><br>');
     text=text.replace(/\n/g,'<br>');
+
     return text;
   }
 
