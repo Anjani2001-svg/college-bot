@@ -1,4 +1,5 @@
 import os
+import httpx
 from pathlib import Path
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -6,7 +7,15 @@ from excel_loader import CourseLoader
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# ✅ FIX — explicit timeout and httpx client for Railway compatibility
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    http_client=httpx.Client(
+        timeout=httpx.Timeout(60.0, connect=15.0),
+        follow_redirects=True,
+    ),
+    max_retries=2,
+)
 
 COURSES_PATH = Path(__file__).parent / "courses.xlsx"
 
@@ -16,10 +25,6 @@ try:
 except FileNotFoundError as e:
     print(f"❌ {e}")
     loader = None
-
-# ---------------------------------------------------------------------------
-# System prompt — plain text with emoji/unicode for Brevo compatibility
-# ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """
 You are Aria, a warm and friendly admissions assistant for South London College.
@@ -39,7 +44,7 @@ Use this EXACT format when recommending courses:
 Overview: [2 sentences summarising what the course covers]
 Level: [level] | Duration: [standard] (Fast Track: [fast track])
 Best for: [one sentence who it's for]
-Entry Requirenments: [brief entry requirements]
+Entry Requirements: [brief entry requirements]
 Career Paths: [one line about jobs/salary after completing]
 🔗 [full URL on its own line]
 ──────────────────────────
@@ -83,7 +88,6 @@ def get_reply(user_message: str, conversation_history: list[dict]) -> str:
             "🔗 https://southlondoncollege.org"
         )
 
-    # Warm greeting for first message
     if is_greeting(user_message) and len(conversation_history) == 0:
         return (
             "Hello! 👋 Welcome to South London College!\n\n"
@@ -91,12 +95,12 @@ def get_reply(user_message: str, conversation_history: list[dict]) -> str:
             "the perfect course, whether you're starting a new career, upskilling, "
             "or progressing to higher education.\n\n"
             "We offer qualifications from Level 2 to Level 7 in:\n"
-            "-IT & Computing\n"
-            "-Business & Management\n"
-            "-Accounting & Finance\n"
-            "-Health & Social Care\n"
-            "-Law\n"
-            "-Teaching & Education...and much more!\n\n"
+            "- IT & Computing\n"
+            "- Business & Management\n"
+            "- Accounting & Finance\n"
+            "- Health & Social Care\n"
+            "- Law\n"
+            "- Teaching & Education...and much more!\n\n"
             "What are you interested in studying? 😊"
         )
 
