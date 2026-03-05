@@ -3,57 +3,66 @@ import pandas as pd
 from pathlib import Path
 
 SYNONYMS = {
-    "it":           ["computing", "digital", "technology", "information"],
-    "tech":         ["computing", "digital", "technology", "information"],
-    "computer":     ["computing", "digital", "technology"],
-    "computers":    ["computing", "digital", "technology"],
-    "coding":       ["programming", "computing", "software", "developer"],
-    "code":         ["programming", "computing", "software"],
-    "web":          ["web development", "digital", "computing"],
-    "cyber":        ["cyber security", "computing", "digital"],
-    "security":     ["cyber security", "computing"],
-    "data":         ["data analyst", "computing", "digital"],
-    "software":     ["software developer", "computing", "programming"],
-    "finance":      ["accounting", "finance"],
-    "money":        ["accounting", "finance"],
-    "hr":           ["human resources", "business"],
-    "health":       ["health", "social care", "healthcare"],
-    "care":         ["social care", "health", "adult care"],
-    "nurse":        ["health", "social care", "nursing"],
-    "teach":        ["teaching", "education", "teacher"],
-    "teacher":      ["teaching", "education", "foundations of teaching"],
-    "law":          ["law", "legal"],
-    "legal":        ["law", "legal"],
-    "management":   ["management", "business", "leadership"],
-    "marketing":    ["marketing", "business", "digital"],
-    "project":      ["project management", "business", "management"],
-    "pm":           ["project management"],
-    "leadership":   ["leadership", "management", "business"],
-    "psychology":   ["psychology", "counselling", "mental health"],
-    "mental":       ["mental health", "psychology", "counselling"],
-    "maths":        ["mathematics", "maths", "functional skills"],
-    "math":         ["mathematics", "maths", "functional skills"],
-    "english":      ["english", "functional skills", "communication"],
-    "sport":        ["sport", "physical education", "fitness"],
-    "fitness":      ["fitness", "sport", "personal training"],
-    "childcare":    ["childcare", "child", "early years"],
-    "early years":  ["early years", "childcare"],
-    "logistics":    ["logistics", "supply chain", "operations"],
-    "supply chain": ["supply chain", "logistics", "operations"],
-    "hospitality":  ["hospitality", "hotel", "tourism"],
-    "tourism":      ["tourism", "hospitality", "travel"],
-    # ✅ New synonyms for hours/credits queries
-    "hours":        ["guided learning hours", "total qualification time", "duration"],
-    "guided":       ["guided learning hours", "learning hours"],
+    "it":             ["computing", "digital", "technology", "information"],
+    "tech":           ["computing", "digital", "technology", "information"],
+    "computer":       ["computing", "digital", "technology"],
+    "computers":      ["computing", "digital", "technology"],
+    "coding":         ["programming", "computing", "software", "developer"],
+    "code":           ["programming", "computing", "software"],
+    "web":            ["web development", "digital", "computing"],
+    "cyber":          ["cyber security", "computing", "digital"],
+    "security":       ["cyber security", "computing"],
+    "data":           ["data analyst", "computing", "digital"],
+    "software":       ["software developer", "computing", "programming"],
+    "finance":        ["accounting", "finance"],
+    "money":          ["accounting", "finance"],
+    "hr":             ["human resources", "business"],
+    "health":         ["health", "social care", "healthcare"],
+    "care":           ["social care", "health", "adult care"],
+    "nurse":          ["health", "social care", "nursing"],
+    "teach":          ["teaching", "education", "teacher"],
+    "teacher":        ["teaching", "education", "foundations of teaching"],
+    "law":            ["law", "legal"],
+    "legal":          ["law", "legal"],
+    "management":     ["management", "business", "leadership"],
+    "marketing":      ["marketing", "business", "digital"],
+    "project":        ["project management", "business", "management"],
+    "pm":             ["project management"],
+    "leadership":     ["leadership", "management", "business"],
+    "psychology":     ["psychology", "counselling", "mental health"],
+    "mental":         ["mental health", "psychology", "counselling"],
+    "maths":          ["mathematics", "maths", "functional skills"],
+    "math":           ["mathematics", "maths", "functional skills"],
+    "english":        ["english", "functional skills", "communication"],
+    "sport":          ["sport", "physical education", "fitness"],
+    "fitness":        ["fitness", "sport", "personal training"],
+    "childcare":      ["childcare", "child", "early years"],
+    "early years":    ["early years", "childcare"],
+    "logistics":      ["logistics", "supply chain", "operations"],
+    "supply chain":   ["supply chain", "logistics", "operations"],
+    "hospitality":    ["hospitality", "hotel", "tourism"],
+    "tourism":        ["tourism", "hospitality", "travel"],
+    "hours":          ["guided learning hours", "total qualification time", "duration"],
+    "guided":         ["guided learning hours", "learning hours"],
     "learning hours": ["guided learning hours", "total qualification time"],
-    "credits":      ["number of credits", "credit", "qualification"],
-    "credit":       ["number of credits", "credits", "qualification"],
-    "tqt":          ["total qualification time", "guided learning hours"],
-    "glh":          ["guided learning hours", "total qualification time"],
-    "time":         ["total qualification time", "duration", "guided learning hours"],
-    "outcomes":     ["learning outcomes", "what you will learn"],
-    "units":        ["learning outcomes", "units", "modules"],
-    "modules":      ["learning outcomes", "units", "modules"],
+    "credits":        ["number of credits", "credit", "qualification"],
+    "credit":         ["number of credits", "credits", "qualification"],
+    "tqt":            ["total qualification time", "guided learning hours"],
+    "glh":            ["guided learning hours", "total qualification time"],
+    "time":           ["total qualification time", "duration", "guided learning hours"],
+    "outcomes":       ["learning outcomes", "what you will learn"],
+    "units":          ["learning outcomes", "units", "modules"],
+    "modules":        ["learning outcomes", "units", "modules"],
+    "assessment":     ["method of assessment", "assessment", "portfolio"],
+    "assessed":       ["method of assessment", "assessment"],
+    "exam":           ["method of assessment", "assessment", "examination"],
+    "portfolio":      ["method of assessment", "portfolio of evidence"],
+    "certificate":    ["certification", "certificate", "qualification"],
+    "regulated":      ["regulated by", "ofqual", "regulation"],
+    "ofqual":         ["regulated by", "ofqual"],
+    "accredited":     ["regulated by", "awarded by", "accredited"],
+    "qualification number": ["qualification number"],
+    "qual number":    ["qualification number"],
 }
 
 
@@ -82,14 +91,22 @@ class CourseLoader:
             raise FileNotFoundError(f"Course data file not found: {filepath}")
 
         self.df = pd.read_excel(filepath)
+
+        # ✅ Strip spaces AND trailing colons from column names (fixes "Guided Learning Hours:")
         self.df.columns = [c.strip().rstrip(":").strip() for c in self.df.columns]
+
+        # ✅ Normalise "Number of credits" → consistent casing
+        self.df.columns = [
+            "Number of Credits" if c.lower() == "number of credits" else c
+            for c in self.df.columns
+        ]
 
         for col in self.df.columns:
             self.df[col] = self.df[col].fillna("").astype(str).str.strip()
 
         self.df = self.df[self.df["Course Name"].str.strip() != ""].reset_index(drop=True)
 
-        # ✅ Search blob now includes ALL fields
+        # ✅ Search blob includes ALL 21 columns
         self._search_text = []
         for _, row in self.df.iterrows():
             blob = " ".join([
@@ -100,12 +117,16 @@ class CourseLoader:
                 row.get("Learning Outcomes", ""),
                 row.get("Qualification Level", ""),
                 row.get("Course Qualification Type", ""),
-                row.get("Guided Learning Hours", ""),        # ✅ added
-                row.get("Total Qualification Time", ""),     # ✅ added
-                row.get("Number of Credits", ""),            # ✅ added
-                row.get("Academic Progression", ""),         # ✅ added
-                row.get("Entry Requirements", ""),           # ✅ added
-                row.get("Awarded by", ""),                   # ✅ added
+                row.get("Guided Learning Hours", ""),
+                row.get("Total Qualification Time", ""),
+                row.get("Number of Credits", ""),
+                row.get("Academic Progression", ""),
+                row.get("Entry Requirements", ""),
+                row.get("Awarded by", ""),
+                row.get("Method of Assessment", ""),     # ✅ new
+                row.get("Certification", ""),            # ✅ new
+                row.get("Regulated by", ""),             # ✅ new
+                row.get("Qualification Number", ""),     # ✅ new
             ]).lower()
             self._search_text.append(blob)
 
@@ -138,7 +159,7 @@ class CourseLoader:
         return [self.df.iloc[idx].to_dict() for _, idx in scored[:top_n]]
 
     def format_course_for_bot(self, course: dict) -> str:
-        """Build a full informative text block for one course — all fields included."""
+        """Build a full text block for one course — all 21 columns included."""
         def val(key):
             return course.get(key, "").strip()
 
@@ -147,19 +168,26 @@ class CourseLoader:
         lines.append(f"   URL: {val('Course URL')}")
         lines.append(f"   Level: {val('Qualification Level')} | Type: {val('Course Qualification Type')} | Awarded by: {val('Awarded by')}")
 
-        # Duration block
-        parts = []
-        if val("Standard Duration"):    parts.append(f"Standard: {val('Standard Duration')}")
-        if val("Fast Track Duration"):  parts.append(f"Fast Track: {val('Fast Track Duration')}")
-        if val("Access Duration"):      parts.append(f"Access Period: {val('Access Duration')}")
-        if parts:
-            lines.append(f"   Duration — {' | '.join(parts)}")
+        # Qualification details
+        qd_parts = []
+        if val("Qualification Number"):  qd_parts.append(f"Qual No: {val('Qualification Number')}")
+        if val("Regulated by"):          qd_parts.append(f"Regulated by: {val('Regulated by')[:80]}")
+        if qd_parts:
+            lines.append(f"   {' | '.join(qd_parts)}")
 
-        # ✅ Hours & Credits block
+        # Duration
+        dur_parts = []
+        if val("Standard Duration"):    dur_parts.append(f"Standard: {val('Standard Duration')}")
+        if val("Fast Track Duration"):  dur_parts.append(f"Fast Track: {val('Fast Track Duration')}")
+        if val("Access Duration"):      dur_parts.append(f"Access Period: {val('Access Duration')}")
+        if dur_parts:
+            lines.append(f"   Duration — {' | '.join(dur_parts)}")
+
+        # Hours & Credits
         hc_parts = []
-        if val("Guided Learning Hours"):     hc_parts.append(f"Guided Learning Hours: {val('Guided Learning Hours')}")
-        if val("Total Qualification Time"):  hc_parts.append(f"Total Qualification Time: {val('Total Qualification Time')}")
-        if val("Number of Credits"):         hc_parts.append(f"Credits: {val('Number of Credits')}")
+        if val("Guided Learning Hours"):    hc_parts.append(f"Guided Learning Hours: {val('Guided Learning Hours')}")
+        if val("Total Qualification Time"): hc_parts.append(f"Total Qualification Time: {val('Total Qualification Time')}")
+        if val("Number of Credits"):        hc_parts.append(f"Credits: {val('Number of Credits')}")
         if hc_parts:
             lines.append(f"   {' | '.join(hc_parts)}")
 
@@ -168,7 +196,7 @@ class CourseLoader:
             ov = val("Course Overview")
             lines.append(f"   Overview: {ov[:400].rsplit(' ', 1)[0]}..." if len(ov) > 400 else f"   Overview: {ov}")
 
-        # ✅ Learning Outcomes
+        # Learning Outcomes
         if val("Learning Outcomes"):
             lo = val("Learning Outcomes")
             lines.append(f"   Learning Outcomes: {lo[:400].rsplit(' ', 1)[0]}..." if len(lo) > 400 else f"   Learning Outcomes: {lo}")
@@ -182,6 +210,16 @@ class CourseLoader:
         if val("Entry Requirements"):
             r = val("Entry Requirements")
             lines.append(f"   Entry Requirements: {r[:200].rsplit(' ', 1)[0]}..." if len(r) > 200 else f"   Entry Requirements: {r}")
+
+        # Method of Assessment
+        if val("Method of Assessment"):
+            m = val("Method of Assessment")
+            lines.append(f"   Assessment: {m[:250].rsplit(' ', 1)[0]}..." if len(m) > 250 else f"   Assessment: {m}")
+
+        # Certification received
+        if val("Certification"):
+            ce = val("Certification")
+            lines.append(f"   Certification: {ce[:200].rsplit(' ', 1)[0]}..." if len(ce) > 200 else f"   Certification: {ce}")
 
         # Career Paths
         if val("Career Progression"):
