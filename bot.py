@@ -51,47 +51,19 @@ FORMATTING RULES — CRITICAL
 - The frontend handles all visual styling — just output clean plain text
 
 ═══════════════════════════════
-COURSE CARD FORMAT (max 3 courses)
+SEARCH MODE (course cards)
 ═══════════════════════════════
-
-📘 [Course Name]
-🔗 [URL]
-
-Level: [level]  •  Awarded by: [awarding body]  •  [Regulated/Ofqual if available]
-Duration: [standard]  |  Fast Track: [fast track]  |  [Credits] Credits
-
-What you will learn:
-→ [outcome 1]
-→ [outcome 2]
-→ [outcome 3 — max 3 only]
-
-Who it is for: [one line]
-Entry: [one line]
-Assessment: [one line — mention if no exams]
-Top careers: [job — salary]  |  [job — salary]
-
-
-
-After listing courses end with:
+When you receive COURSE DATA in search mode, output each course card EXACTLY as provided.
+Do not rewrite, reorder, merge or rephrase the cards.
+You may add a short warm intro sentence before the cards (one line max).
+After the cards, end with:
 "Want full details? Just say tell me more about [course name] 😊"
 
 ═══════════════════════════════
 FULL DETAILS MODE
 ═══════════════════════════════
 When you receive a FULL DETAILS block, output it EXACTLY as provided.
-Do not rewrite, reorder or summarise. Keep ALL sections including:
-
-→ Duration & Hours (arrow bullet list)
-→ Overview (short summary + link)
-→ What you will learn (arrow bullets)
-→ Who it is for (arrow bullets)
-→ Entry Requirements (arrow bullets)
-→ Method of Assessment (concise arrow bullet list of methods only)
-→ Certification
-→ Career Progression (intro paragraph + Career Prospects with arrow bullets)
-→ Possible Academic Progression Pathway (arrow bullet list of pathways)
-
-Preserve all → bullets and section headings exactly as given.
+Do not rewrite, reorder or summarise. Preserve all → bullets and section headings exactly.
 Do NOT add any divider lines or markdown formatting.
 End with:
 "Ready to take the next step? Visit the course page or contact our admissions team 😊"
@@ -202,15 +174,15 @@ def get_reply(user_message: str, conversation_history: list) -> str:
     if is_more_details_request(user_message):
         search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
         course_context = loader.get_full_details_for_query(search_query)
-        mode_note = "FULL DETAILS MODE: Output the course data block exactly as provided. Do not summarise or reorder. Preserve all arrows, dividers and headings."
+        mode_note = "FULL DETAILS MODE: Output the course data EXACTLY as provided below. Do not rewrite, reorder, summarise or add markdown. Preserve every line, arrow and heading as-is."
         max_tok = 1500
 
     # ── Course search ───────────────────────────────────────────────────
     elif is_course_search(user_message):
         search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
         course_context = loader.get_context_for_query(search_query)
-        mode_note = "SEARCH MODE: Show max 3 matching courses using the standard card format with bold labels."
-        max_tok = 1000
+        mode_note = "SEARCH MODE: Output the course cards EXACTLY as provided below. Do not rewrite, merge or rephrase them. You may add ONE short warm intro sentence before the cards. Show max 3 cards."
+        max_tok = 1200
 
     # ── Conversational reply ────────────────────────────────────────────
     else:
@@ -232,7 +204,7 @@ def get_reply(user_message: str, conversation_history: list) -> str:
                 "role": "user",
                 "content": (
                     f"[MODE: {mode_note}]\n\n"
-                    + (f"[COURSE DATA]:\n{'─' * 40}\n{course_context}\n{'─' * 40}\n\n" if course_context else "")
+                    + (f"[COURSE DATA — OUTPUT THIS EXACTLY]:\n\n{course_context}\n\n" if course_context else "")
                     + f"LEARNER: {user_message}"
                 ),
             }
