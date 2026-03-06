@@ -27,38 +27,38 @@ except FileNotFoundError as e:
 
 SYSTEM_PROMPT = """
 You are Aria, a warm and friendly admissions assistant for South London College.
-Your job is to have natural conversations with learners and help them find courses.
+Your job is to have natural conversations with learners and help them find the right course.
 
 CONVERSATION RULES:
-- Be warm, friendly and conversational
+- Be warm, friendly and encouraging — like a helpful person, not a search engine
 - Do NOT show course listings unless the learner is clearly asking about courses
-- If someone asks a general question, answer it naturally
-- Only show course cards when the learner asks about specific courses
+- Answer general questions naturally in conversation
+- Ask follow-up questions to understand what the learner needs
 - If someone asks about fees, say fees vary and direct them to the course page
 - If someone asks how to enrol, explain they can visit the course page or contact admissions
-- Ask follow-up questions to understand what the learner needs
-- Keep replies short and natural unless showing course details
 
 WHEN SHOWING SEARCH RESULTS use this EXACT format (max 3 courses):
 
 ──────────────────────────
-📘 [COURSE NAME IN CAPITALS]
+📘 [COURSE NAME]
 
-🎓 [Level]  •  [Awarded by]  •  [Regulated if available]
-⏱️ [Standard duration]  •  Fast Track: [fast track]  •  [Credits] Credits
+[Level]  •  Awarded by: [awarding body]  •  Ofqual Regulated
+[Standard duration]  |  Fast Track: [fast track]  |  [Credits] Credits
 
-What you will learn:
-→ [outcome 1]
-→ [outcome 2]
-→ [outcome 3 - max 3 outcomes only]
+✏️ What you will learn:
+✔ [outcome 1]
+✔ [outcome 2]
+✔ [outcome 3 — max 3 only]
 
-Who it is for: [one line description]
+👤 Who it is for: [one line]
 
-Entry: [brief entry requirements in one line]
+📋 Entry: [brief entry requirements in one line]
 
-Assessment: [one line - mention if no exams]
+📝 Assessment: [one line — mention if no exams]
 
-Top careers: [job 1 with salary]  |  [job 2 with salary]
+💼 Top careers:
+✔ [Job title] — [salary]
+✔ [Job title] — [salary]
 
 🔗 [URL]
 ──────────────────────────
@@ -95,6 +95,16 @@ COURSE_SEARCH_KEYWORDS = [
     "it course", "business course", "health course", "law course",
     "computing", "accounting", "teaching", "management", "cyber",
     "what do you offer", "available courses", "recommend",
+    "programming", "software", "java", "python", "coding", "developer",
+    "related", "related to", "related this", "any courses", "similar",
+    "is there", "are there", "can i study", "can i learn",
+]
+
+# Vague follow-up phrases that need conversation context to search correctly
+FOLLOWUP_PHRASES = [
+    "related this", "related to this", "courses related", "any courses",
+    "is there any", "are there any", "something like", "similar courses",
+    "anything related", "courses for this", "about this",
 ]
 
 def is_greeting(text: str) -> bool:
@@ -108,6 +118,24 @@ def is_more_details_request(text: str) -> bool:
 def is_course_search(text: str) -> bool:
     t = text.lower().strip()
     return any(kw in t for kw in COURSE_SEARCH_KEYWORDS)
+
+def is_vague_followup(text: str) -> bool:
+    """Detect when user says something vague like 'is there any courses related this?'"""
+    t = text.lower().strip()
+    return any(phrase in t for phrase in FOLLOWUP_PHRASES)
+
+def extract_topic_from_history(history: list) -> str:
+    """
+    Pull the last meaningful topic from conversation history.
+    Used when user asks a vague follow-up like 'is there any courses related this?'
+    """
+    # Walk history backwards looking for substantive user/assistant messages
+    for msg in reversed(history):
+        content = msg.get("content", "").strip()
+        if len(content) > 10:
+            # Return first 200 chars of last meaningful message as context
+            return content[:200]
+    return ""
 
 
 def get_reply(user_message: str, conversation_history: list) -> str:
@@ -139,7 +167,13 @@ def get_reply(user_message: str, conversation_history: list) -> str:
         max_tok = 1500
 
     elif is_course_search(user_message):
-        course_context = loader.get_context_for_query(user_message)
+        # ✅ If vague follow-up, enrich search query with context from history
+        if is_vague_followup(user_message) and conversation_history:
+            topic_context = extract_topic_from_history(conversation_history)
+            search_query = f"{user_message} {topic_context}"
+        else:
+            search_query = user_message
+        course_context = loader.get_context_for_query(search_query)
         mode_note = "SEARCH MODE: Show max 3 matching courses in the standard card format."
         max_tok = 900
 
