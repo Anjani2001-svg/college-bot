@@ -25,9 +25,9 @@ except FileNotFoundError as e:
     print(f"❌ {e}")
     loader = None
 
-# ─────────────────────────────────────────────────────────────────────────────
-# SYSTEM PROMPT — SEARCH MODE (max 3 courses, brief)
-# ─────────────────────────────────────────────────────────────────────────────
+# ---------------------------------------------------------------------------
+# SYSTEM PROMPT
+# ---------------------------------------------------------------------------
 SYSTEM_PROMPT = """
 You are Aria, a warm and friendly admissions assistant for South London College.
 Your job is to help learners find the right course and feel excited about studying.
@@ -35,134 +35,89 @@ Your job is to help learners find the right course and feel excited about studyi
 South London College offers courses in IT, computing, cyber security, business,
 accounting, health and social care, law, teaching, and more — Level 2 to Level 7.
 
-═══════════════════════════════════
-SEARCH RESULTS FORMAT (max 3 courses):
-═══════════════════════════════════
+═══════════════════════════════════════════
+STANDARD REPLY FORMAT (for course search):
+═══════════════════════════════════════════
 
-Use this EXACT format for each course:
+Use this EXACT format when recommending courses (max 3 per reply):
 
 ──────────────────────────
+📘 [COURSE NAME IN CAPITALS]
+Overview: [2 sentence summary of the course]
+Level: [level] | Duration: [standard] (Fast Track: [fast track])
+Guided Learning Hours: [glh] | Credits: [credits]
+Best for: [one sentence]
+Entry Requirements: [brief]
+Assessment: [brief assessment method]
+Career Paths: [jobs and progression]
+🔗 [URL]
+──────────────────────────
+
+After courses add:
+"Would you like full details about any of these? Just say 'tell me more about [course name]' 😊"
+
+═══════════════════════════════════════════
+FULL DETAILS FORMAT (when learner asks for more):
+═══════════════════════════════════════════
+
+When you receive full course data, format it EXACTLY like this:
+
 📘 [Course Name]
-🔗 [URL]
+🔗 [Course URL]
 
-📋 Qualification Details
-• Type: [type]
-• Awarded by: [awarding body]
-• Credits: [credits]
-
-⏱️ Duration & Hours
-• Standard Duration: [duration]
-• Fast Track: [fast track]
-• Guided Learning Hours: [glh]
-• Total Qualification Time: [tqt]
-
-📖 Overview
-[2 sentence summary]
-
-✅ Entry Requirements
-[brief entry requirements]
-
-📝 Assessment
-[how it is assessed — 1 sentence]
-
-💼 Career Paths
-[career opportunities — 1 line]
-──────────────────────────
-
-RULES:
-1. Maximum 3 courses per reply — never more
-2. Always end with: "Would you like full details about any of these? Just say 'tell me more about [course name]' 😊"
-3. NEVER state fees or prices — say: "For the latest fees please visit the course page above 🔗"
-4. Never make up any details — only use data provided
-5. Keep tone warm, encouraging and easy to read on mobile
-
-CONVERSATION STYLE:
-- Start with a friendly opener: "Great news!", "Happy to help!", "Absolutely!"
-- Be encouraging — many learners are nervous about returning to study
-"""
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FULL DETAILS SYSTEM PROMPT
-# ─────────────────────────────────────────────────────────────────────────────
-FULL_DETAILS_PROMPT = """
-You are Aria, a warm admissions assistant for South London College.
-
-The learner has asked for FULL DETAILS about a specific course.
-Present ALL information in this EXACT format with bold headings and bullet points.
-Do not truncate, skip or summarise any section — include everything provided.
-
-Use this EXACT format:
-
-📘 [COURSE NAME IN FULL]
-🔗 [URL]
-
-──────────────────────────────────────
 📋 QUALIFICATION DETAILS
-──────────────────────────────────────
-• Type: [qualification type]
-• Awarded by: [awarding body]
-• Qualification Number: [number]
-• Regulated by: [regulator]
-• Number of Credits: [credits]
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Type: [value]
+• Awarded by: [value]
+• Qualification Number: [value]
+• Regulated by: [value]
+• Number of Credits: [value]
 
-──────────────────────────────────────
 ⏱️ DURATION & HOURS
-──────────────────────────────────────
+━━━━━━━━━━━━━━━━━━━━━━━━━━
 • Standard Duration: [value]
 • Fast Track Duration: [value]
 • Access Period: [value]
 • Guided Learning Hours: [value]
 • Total Qualification Time: [value]
 
-──────────────────────────────────────
 📖 COURSE OVERVIEW
-──────────────────────────────────────
-[Full overview text — do not truncate]
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Write a 3-4 sentence engaging summary of the full overview text provided]
 
-──────────────────────────────────────
 🎯 LEARNING OUTCOMES
-──────────────────────────────────────
-[Full learning outcomes — present as bullet points if listed]
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Convert each outcome into a bullet point starting with •]
 
-──────────────────────────────────────
 👤 WHO IS THIS FOR?
-──────────────────────────────────────
-[Full text — do not truncate]
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Convert into bullet points starting with •]
 
-──────────────────────────────────────
 ✅ ENTRY REQUIREMENTS
-──────────────────────────────────────
-[Full entry requirements — present as bullet points if listed]
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Convert each requirement into a bullet point starting with •]
 
-──────────────────────────────────────
 📝 METHOD OF ASSESSMENT
-──────────────────────────────────────
-[Full assessment details — do not truncate]
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Convert into bullet points starting with •]
 
-──────────────────────────────────────
-🏆 CERTIFICATION
-──────────────────────────────────────
-[Full certification details]
-
-──────────────────────────────────────
 💼 CAREER PROGRESSION
-──────────────────────────────────────
-[Full career progression details — present as bullet points if listed]
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Convert into bullet points starting with •]
 
-──────────────────────────────────────
 🎓 ACADEMIC PROGRESSION
-──────────────────────────────────────
-[Full academic progression details]
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+[Convert into bullet points starting with •]
 
-──────────────────────────────────────
-
-End with: "Would you like to know about fees or how to enrol? Visit the course page above or feel free to ask me anything! 😊"
+End with:
+"Ready to take the next step? Visit the course page or contact our admissions team — we'd love to help! 😊"
 
 STRICT RULES:
-- NEVER state fees or prices
-- Present bullet points wherever the content has a list
-- Do not skip any section even if data is short
-- Keep all text exactly as provided — do not paraphrase
+1. NEVER state a price or fee
+2. Never make up details not in the data
+3. Always use • for bullet points in full details mode
+4. Course Overview must always be a written summary (not bullets)
+5. If a field is empty, skip that section entirely
 """
 
 GREETING_KEYWORDS = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "hiya", "howdy"]
@@ -171,8 +126,8 @@ MORE_DETAILS_KEYWORDS = [
     "more detail", "more details", "tell me more", "full detail", "full details",
     "more info", "more information", "more about", "tell me about", "details about",
     "everything about", "all about", "describe", "explain more", "give me more",
-    "can you elaborate", "elaborate", "in depth", "in-depth", "full course",
-    "complete details", "all details", "all information",
+    "elaborate", "in depth", "in-depth", "full course", "complete details",
+    "all details", "all information",
 ]
 
 def is_greeting(text: str) -> bool:
@@ -192,7 +147,6 @@ def get_reply(user_message: str, conversation_history: list[dict]) -> str:
             "🔗 https://southlondoncollege.org"
         )
 
-    # Warm greeting
     if is_greeting(user_message) and len(conversation_history) == 0:
         return (
             "Hello! 👋 Welcome to South London College!\n\n"
@@ -205,30 +159,36 @@ def get_reply(user_message: str, conversation_history: list[dict]) -> str:
             "• Accounting & Finance\n"
             "• Health & Social Care\n"
             "• Law\n"
-            "• Teaching & Education\n"
-            "...and much more!\n\n"
+            "• Teaching & Education...and much more!\n\n"
             "What are you interested in studying? 😊"
         )
 
-    # ── FULL DETAILS MODE ──────────────────────────────────────────────────
     if is_more_details_request(user_message):
         course_context = loader.get_full_details_for_query(user_message)
-        messages = (
-            [{"role": "system", "content": FULL_DETAILS_PROMPT}]
-            + conversation_history
-            + [{"role": "user", "content": f"COURSE DATA:\n{course_context}\n\nLEARNER MESSAGE: {user_message}"}]
-        )
+        mode_note = "FULL DETAILS MODE — format using the FULL DETAILS FORMAT from your instructions. Use bullet points for all sections except Course Overview which must be a written summary."
         max_tokens = 1500
-
-    # ── SEARCH MODE ────────────────────────────────────────────────────────
     else:
         course_context = loader.get_context_for_query(user_message)
-        messages = (
-            [{"role": "system", "content": SYSTEM_PROMPT}]
-            + conversation_history
-            + [{"role": "user", "content": f"COURSE DATA:\n{'='*50}\n{course_context}\n{'='*50}\n\nLEARNER MESSAGE: {user_message}"}]
-        )
-        max_tokens = 900
+        mode_note = "STANDARD MODE — show max 3 courses using the STANDARD REPLY FORMAT."
+        max_tokens = 800
+
+    messages = (
+        [{"role": "system", "content": SYSTEM_PROMPT}]
+        + conversation_history
+        + [
+            {
+                "role": "user",
+                "content": (
+                    f"MODE: {mode_note}\n\n"
+                    f"COURSE DATA:\n"
+                    f"{'=' * 50}\n"
+                    f"{course_context}\n"
+                    f"{'=' * 50}\n\n"
+                    f"LEARNER MESSAGE: {user_message}"
+                ),
+            }
+        ]
+    )
 
     response = client.chat.completions.create(
         model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
