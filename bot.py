@@ -88,7 +88,7 @@ Do not rewrite, reorder or summarise. Keep ALL sections including:
 - Career Progression (intro paragraph + Career Prospects with arrow bullets)
 - Possible Academic Progression Pathway (arrow bullet list of pathways)
 
-Preserve all → bullets and section headings exactly as given. Do NOT add any divider lines.
+
 End with:
 "Ready to take the next step? Visit the course page or contact our admissions team 😊"
 
