@@ -202,15 +202,15 @@ class CourseLoader:
         return "\n".join(lines)
 
     def format_full_course(self, course: dict) -> str:
-        """Full details — Option C friendly style with light emojis and tick bullets."""
+        """Full details — Option B Minimal & Modern with arrow bullets."""
         def val(key):
             return course.get(key, "").strip()
 
-        def tick_lines(text):
+        def arrow_lines(text):
             lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
             if len(lines) <= 1:
                 return text.strip()
-            return "\n".join(f"✔ {l}" for l in lines)
+            return "\n".join(f"→ {l}" for l in lines)
 
         lines = []
 
@@ -243,9 +243,9 @@ class CourseLoader:
         if val("Number of Credits"):        lines.append(f"  Credits:               {val('Number of Credits')}")
         lines.append("")
 
-        # Overview
+        # Overview — 2 sentence summary + link
         if val("Course Overview"):
-            lines.append("📖 Overview")
+            lines.append("Overview")
             lines.append("──────────────────────────")
             sentences = val("Course Overview").replace("\n", " ").split(". ")
             summary = ". ".join(sentences[:2]).strip()
@@ -254,53 +254,46 @@ class CourseLoader:
             lines.append(f"👉 Full details: {val('Course URL')}")
             lines.append("")
 
-        # Learning Outcomes
         if val("Learning Outcomes"):
-            lines.append("✏️ What You Will Learn")
+            lines.append("What you will learn")
             lines.append("──────────────────────────")
-            lines.append(tick_lines(val("Learning Outcomes")))
+            lines.append(arrow_lines(val("Learning Outcomes")))
             lines.append("")
 
-        # Who it is for
         if val("Who is This Certification For?"):
-            lines.append("👤 Who Is This For?")
+            lines.append("Who it is for")
             lines.append("──────────────────────────")
-            lines.append(tick_lines(val("Who is This Certification For?")))
+            lines.append(arrow_lines(val("Who is This Certification For?")))
             lines.append("")
 
-        # Entry Requirements
         if val("Entry Requirements"):
-            lines.append("📋 Entry Requirements")
+            lines.append("Entry Requirements")
             lines.append("──────────────────────────")
-            lines.append(tick_lines(val("Entry Requirements")))
+            lines.append(arrow_lines(val("Entry Requirements")))
             lines.append("")
 
-        # Assessment
         if val("Method of Assessment"):
-            lines.append("📝 Method of Assessment")
+            lines.append("Method of Assessment")
             lines.append("──────────────────────────")
-            lines.append(tick_lines(val("Method of Assessment")))
+            lines.append(arrow_lines(val("Method of Assessment")))
             lines.append("")
 
-        # Certification
         if val("Certification"):
-            lines.append("🏆 Certification")
+            lines.append("Certification")
             lines.append("──────────────────────────")
-            lines.append(tick_lines(val("Certification")))
+            lines.append(arrow_lines(val("Certification")))
             lines.append("")
 
-        # Career Progression
         if val("Career Progression"):
-            lines.append("💼 Career Progression")
+            lines.append("Career Progression")
             lines.append("──────────────────────────")
-            lines.append(tick_lines(val("Career Progression")))
+            lines.append(arrow_lines(val("Career Progression")))
             lines.append("")
 
-        # Academic Progression
         if val("Academic Progression"):
-            lines.append("🎓 Academic Progression")
+            lines.append("Academic Progression")
             lines.append("──────────────────────────")
-            lines.append(tick_lines(val("Academic Progression")))
+            lines.append(arrow_lines(val("Academic Progression")))
             lines.append("")
 
         return "\n".join(lines)
