@@ -28,52 +28,64 @@ except FileNotFoundError as e:
 SYSTEM_PROMPT = """
 You are Aria, a warm and friendly admissions assistant for South London College.
 
-CORE BEHAVIOUR:
-- Be warm and encouraging but get to the point quickly
-- ALWAYS suggest relevant courses after 1 short reply — do not keep asking questions
-- If the learner mentions ANY topic or interest, immediately suggest matching courses
-- Only ask ONE follow-up question maximum before showing courses
-- If you have enough context to show courses, show them straight away
-- If someone asks about fees, direct them to the course page
-- If someone asks how to enrol, explain they can visit the course page or contact admissions
+═══════════════════════════════
+CORE BEHAVIOUR
+═══════════════════════════════
+- Be warm, encouraging and get to the point quickly
+- Use the FULL conversation history to understand context — never forget what was said earlier
+- If a learner refers to something vague like "this", "that course", "it" — look back at conversation history
+- ALWAYS suggest relevant courses after at most 1 short reply — do not keep asking follow-up questions
+- If learner mentions any subject, career, or interest → show matching courses immediately
+- If context is clear enough → show courses straight away without asking anything
 
-WHEN TO SHOW COURSES:
-- Learner mentions a subject, career, or interest → show courses immediately
-- Learner asks a vague question → give a one-line answer then show relevant courses
-- Learner says yes/no to a follow-up → show courses immediately
-- Never make the learner ask more than once before seeing courses
+═══════════════════════════════
+FORMATTING RULES — ALWAYS FOLLOW
+═══════════════════════════════
+- Use **text** for ALL section headings and labels (renders as bold)
+- Use → for bullet points inside course cards
+- Use clean divider lines ────────────────── between courses
+- Keep spacing clean — one blank line between sections
+- Never use numbered lists unless listing career steps
+- Never use markdown headers like ## or ###
 
-COURSE CARD FORMAT (max 3 courses):
+═══════════════════════════════
+COURSE CARD FORMAT (max 3 courses)
+═══════════════════════════════
 
 ──────────────────────────
-📘 [Course Name]
+📘 **[Course Name]**
 
-[Level]  •  [Awarded by]  •  [Regulated]
-[Standard duration]  |  Fast Track: [fast track]  |  [Credits] Credits
+**Level:** [level]  •  **Awarded by:** [awarding body]  •  [Regulated/Ofqual if available]
+**Duration:** [standard]  |  Fast Track: [fast track]  |  [Credits] Credits
 
-What you will learn:
+**What you will learn:**
 → [outcome 1]
 → [outcome 2]
 → [outcome 3 — max 3 only]
 
-Who it is for: [one line]
-Entry: [one line]
-Assessment: [one line — note if no exams]
-Top careers: [job — salary]  |  [job — salary]
+**Who it is for:** [one line]
+**Entry:** [one line]
+**Assessment:** [one line — mention if no exams]
+**Top careers:** [job — salary]  |  [job — salary]
 
 🔗 [URL]
 ──────────────────────────
 
-After courses always end with:
-"Want full details? Say tell me more about [course name] 😊"
+After listing courses end with:
+"Want full details? Just say *tell me more about [course name]* 😊"
 
-FULL DETAILS MODE:
-When you receive a FULL DETAILS block, output it EXACTLY as provided. End with:
+═══════════════════════════════
+FULL DETAILS MODE
+═══════════════════════════════
+When you receive a FULL DETAILS block, output it EXACTLY as provided.
+Do not rewrite or summarise. End with:
 "Ready to take the next step? Visit the course page or contact our admissions team 😊"
 
-STRICT RULES:
-- NEVER state a price or fee
-- Never make up course details
+═══════════════════════════════
+STRICT RULES
+═══════════════════════════════
+- NEVER state a price or fee — say: for the latest fees please visit the course page
+- Never make up course names or details
 - Max 3 courses per reply
 - Keep tone warm and concise
 """
@@ -145,6 +157,7 @@ def get_reply(user_message: str, conversation_history: list) -> str:
             "Please visit our website: 🔗 https://southlondoncollege.org"
         )
 
+    # ── Fresh greeting — only when no history ──────────────────────────
     if is_greeting(user_message) and len(conversation_history) == 0:
         return (
             "Hello! 👋 Welcome to South London College!\n\n"
@@ -161,37 +174,59 @@ def get_reply(user_message: str, conversation_history: list) -> str:
             "What are you interested in studying? 😊"
         )
 
+    # ── Build enriched search query using conversation history ─────────
+    # Combine last 3 exchanges so vague follow-ups like "is there any courses
+    # related this?" get resolved correctly using prior context
+    def build_context_query(current_msg: str, history: list) -> str:
+        recent = []
+        for msg in history[-6:]:   # last 3 turns (user + assistant each)
+            text = msg.get("content", "").strip()
+            if text and len(text) > 5:
+                recent.append(text[:150])
+        if recent:
+            return current_msg + " " + " ".join(recent)
+        return current_msg
+
+    # ── Full details request ────────────────────────────────────────────
     if is_more_details_request(user_message):
-        course_context = loader.get_full_details_for_query(user_message)
-        mode_note = "FULL DETAILS MODE: Output the course data block exactly as provided."
+        # Try to find course name from current message first,
+        # then fall back to conversation history if vague
+        search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
+        course_context = loader.get_full_details_for_query(search_query)
+        mode_note = "FULL DETAILS MODE: Output the course data block exactly as provided. Do not summarise."
         max_tok = 1500
 
+    # ── Course search ───────────────────────────────────────────────────
     elif is_course_search(user_message):
-        # ✅ If vague follow-up, enrich search query with context from history
-        if is_vague_followup(user_message) and conversation_history:
-            topic_context = extract_topic_from_history(conversation_history)
-            search_query = f"{user_message} {topic_context}"
-        else:
-            search_query = user_message
+        search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
         course_context = loader.get_context_for_query(search_query)
-        mode_note = "SEARCH MODE: Show max 3 matching courses in the standard card format."
-        max_tok = 900
+        mode_note = "SEARCH MODE: Show max 3 matching courses using the standard card format with bold labels."
+        max_tok = 1000
 
+    # ── Conversational reply ────────────────────────────────────────────
     else:
         course_context = ""
-        mode_note = "CONVERSATION MODE: Reply naturally. Do NOT show course listings."
-        max_tok = 400
+        mode_note = (
+            "CONVERSATION MODE: Reply naturally and warmly. "
+            "Use the conversation history for context. "
+            "If the topic hints at a course interest, proactively suggest showing courses. "
+            "Do NOT show full course listings unless asked."
+        )
+        max_tok = 450
 
+    # ── Build messages including FULL conversation history ─────────────
+    # History is passed in from the frontend — this gives the bot memory
+    # within a session. When user clicks Clear Chat the history resets.
     messages = (
         [{"role": "system", "content": SYSTEM_PROMPT}]
-        + conversation_history
+        + conversation_history          # ✅ full chat history for context
         + [
             {
                 "role": "user",
                 "content": (
-                    f"MODE: {mode_note}\n\n"
-                    + (f"COURSE DATA:\n{'=' * 40}\n{course_context}\n{'=' * 40}\n\n" if course_context else "")
-                    + f"LEARNER MESSAGE: {user_message}"
+                    f"[MODE: {mode_note}]\n\n"
+                    + (f"[COURSE DATA]:\n{'─' * 40}\n{course_context}\n{'─' * 40}\n\n" if course_context else "")
+                    + f"LEARNER: {user_message}"
                 ),
             }
         ]
