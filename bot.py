@@ -43,7 +43,7 @@ FORMATTING RULES — ALWAYS FOLLOW
 ═══════════════════════════════
 - Use **text** for ALL section headings and labels (renders as bold)
 - Use → for bullet points inside course cards
-- Use clean divider lines ────────────────── between courses
+- Do NOT output any divider lines like ────── or ══════ — the frontend handles visual separation automatically
 - Keep spacing clean — one blank line between sections
 - Never use numbered lists unless listing career steps
 - Never use markdown headers like ## or ###
@@ -52,7 +52,6 @@ FORMATTING RULES — ALWAYS FOLLOW
 COURSE CARD FORMAT (max 3 courses)
 ═══════════════════════════════
 
-──────────────────────────
 📘 **[Course Name]**
 
 **Level:** [level]  •  **Awarded by:** [awarding body]  •  [Regulated/Ofqual if available]
@@ -69,7 +68,6 @@ COURSE CARD FORMAT (max 3 courses)
 **Top careers:** [job — salary]  |  [job — salary]
 
 🔗 [URL]
-──────────────────────────
 
 After listing courses end with:
 "Want full details? Just say *tell me more about [course name]* 😊"
@@ -90,7 +88,7 @@ Do not rewrite, reorder or summarise. Keep ALL sections including:
 - Career Progression (intro paragraph + Career Prospects with arrow bullets)
 - Possible Academic Progression Pathway (arrow bullet list of pathways)
 
-Preserve all → bullets
+Preserve all → bullets and section headings exactly as given. Do NOT add any divider lines.
 End with:
 "Ready to take the next step? Visit the course page or contact our admissions team 😊"
 
