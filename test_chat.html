@@ -192,35 +192,43 @@
   function removeEmpty() { const e=document.getElementById('emptyState'); if(e)e.remove(); }
 
   function formatBotText(text) {
-    // 1. Escape HTML to prevent XSS
-    text=text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    // 1. Escape HTML
+    text = text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
-    // 2. Make URLs clickable
-    text=text.replace(/(https?:\/\/[^\s<>"]+)/g,
+    // 2. Clickable URLs
+    text = text.replace(/(https?:\/\/[^\s<>"]+)/g,
       '<a href="$1" target="_blank" rel="noopener" style="color:#1a56db;text-decoration:underline;word-break:break-all;">$1</a>');
 
-    // 3. Style divider lines
-    text=text.replace(/─{6,}/g,'<div style="border-top:1px solid #e0e0e0;margin:8px 0;"></div>');
-    text=text.replace(/═{3,}/g,'<div style="border-top:2px solid #e8a623;margin:8px 0;"></div>');
+    // 3. Divider lines
+    text = text.replace(/─{6,}/g, '<hr style="border:none;border-top:1px solid #e0e0e0;margin:10px 0;">');
+    text = text.replace(/═{3,}/g, '<hr style="border:none;border-top:2px solid #e8a623;margin:10px 0;">');
 
-    // 4. ✅ Bold course name after 📘 emoji
-    text=text.replace(/📘 ([^\n<]+)/g,
-      '📘 <strong style="font-weight:700;color:#0f1f3d;font-size:0.92rem;">$1</strong>');
-
-    // 5. Bold field labels
-    text=text.replace(/(Overview:|Duration:|Best for:|Entry Requirements:|Career Paths:|Assessment:|Guided Learning Hours:|Credits:|Level:)/g,
+    // 4. **bold** markdown
+    text = text.replace(/\*\*([^*
+]+)\*\*/g,
       '<strong style="font-weight:700;color:#0f1f3d;">$1</strong>');
 
-    // 6. Bold *HEADINGS* like *QUALIFICATION DETAILS*
-    text=text.replace(/\*(.*?)\*/g,
-      '<strong style="font-weight:700;color:#0f1f3d;font-size:0.9rem;letter-spacing:0.03em;">$1</strong>');
+    // 5. *single* → bold for hints like *tell me more*
+    text = text.replace(/\*([^*
+]+)\*/g,
+      '<strong style="font-weight:600;color:#162848;">$1</strong>');
 
-    // 7. Style bullet points
-    text=text.replace(/^• /gm, '<span style="color:#e8a623;font-weight:700;">•</span> ');
+    // 6. Gold → arrows
+    text = text.replace(/(^|
+)(→ )/gm,
+      '$1<span style="color:#e8a623;font-weight:700;">→</span> ');
+
+    // 7. Gold 📘 course name bold
+    text = text.replace(/📘 ([^
+<]+)/g,
+      '📘 <strong style="font-weight:700;color:#0f1f3d;font-size:0.93rem;">$1</strong>');
 
     // 8. Line breaks
-    text=text.replace(/\n\n/g,'<br><br>');
-    text=text.replace(/\n/g,'<br>');
+    text = text.replace(/
+
+/g, '<br><br>');
+    text = text.replace(/
+/g, '<br>');
 
     return text;
   }
