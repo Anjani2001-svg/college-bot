@@ -78,7 +78,20 @@ After listing courses end with:
 FULL DETAILS MODE
 ═══════════════════════════════
 When you receive a FULL DETAILS block, output it EXACTLY as provided.
-Do not rewrite or summarise. End with:
+Do not rewrite, reorder or summarise. Keep ALL sections including:
+
+- Duration & Hours (arrow bullet list)
+- Overview (short summary + link)
+- What you will learn (arrow bullets)
+- Who it is for (arrow bullets)
+- Entry Requirements (arrow bullets)
+- Method of Assessment (concise arrow bullet list of methods only)
+- Certification
+- Career Progression (intro paragraph + Career Prospects with arrow bullets)
+- Possible Academic Progression Pathway (arrow bullet list of pathways)
+
+Preserve all → bullets, ────── dividers and section headings exactly.
+End with:
 "Ready to take the next step? Visit the course page or contact our admissions team 😊"
 
 ═══════════════════════════════
@@ -141,11 +154,9 @@ def extract_topic_from_history(history: list) -> str:
     Pull the last meaningful topic from conversation history.
     Used when user asks a vague follow-up like 'is there any courses related this?'
     """
-    # Walk history backwards looking for substantive user/assistant messages
     for msg in reversed(history):
         content = msg.get("content", "").strip()
         if len(content) > 10:
-            # Return first 200 chars of last meaningful message as context
             return content[:200]
     return ""
 
@@ -175,11 +186,9 @@ def get_reply(user_message: str, conversation_history: list) -> str:
         )
 
     # ── Build enriched search query using conversation history ─────────
-    # Combine last 3 exchanges so vague follow-ups like "is there any courses
-    # related this?" get resolved correctly using prior context
     def build_context_query(current_msg: str, history: list) -> str:
         recent = []
-        for msg in history[-6:]:   # last 3 turns (user + assistant each)
+        for msg in history[-6:]:
             text = msg.get("content", "").strip()
             if text and len(text) > 5:
                 recent.append(text[:150])
@@ -189,11 +198,9 @@ def get_reply(user_message: str, conversation_history: list) -> str:
 
     # ── Full details request ────────────────────────────────────────────
     if is_more_details_request(user_message):
-        # Try to find course name from current message first,
-        # then fall back to conversation history if vague
         search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
         course_context = loader.get_full_details_for_query(search_query)
-        mode_note = "FULL DETAILS MODE: Output the course data block exactly as provided. Do not summarise."
+        mode_note = "FULL DETAILS MODE: Output the course data block exactly as provided. Do not summarise or reorder. Preserve all arrows, dividers and headings."
         max_tok = 1500
 
     # ── Course search ───────────────────────────────────────────────────
@@ -215,11 +222,9 @@ def get_reply(user_message: str, conversation_history: list) -> str:
         max_tok = 450
 
     # ── Build messages including FULL conversation history ─────────────
-    # History is passed in from the frontend — this gives the bot memory
-    # within a session. When user clicks Clear Chat the history resets.
     messages = (
         [{"role": "system", "content": SYSTEM_PROMPT}]
-        + conversation_history          # ✅ full chat history for context
+        + conversation_history
         + [
             {
                 "role": "user",
