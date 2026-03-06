@@ -199,9 +199,9 @@
     text = text.replace(/(https?:\/\/[^\s<>"&]+)/g,
       '<a href="$1" target="_blank" rel="noopener" style="color:#1a56db;text-decoration:underline;word-break:break-all;">$1</a>');
 
-    // 3. Divider lines
-    text = text.replace(/\u2500{6,}/g, '<div style="border-top:1px solid #dde3ea;margin:10px 0;"></div>');
-    text = text.replace(/\u2550{3,}/g, '<div style="border-top:2px solid #e8a623;margin:10px 0;"></div>');
+    // 3. Divider lines (fallback — clean up any that GPT still outputs)
+    text = text.replace(/\u2500{6,}/g, '');
+    text = text.replace(/\u2550{3,}/g, '');
 
     // 4. **bold** markdown
     text = text.replace(/\*\*([^*\n]+)\*\*/g,
@@ -211,7 +211,7 @@
     text = text.replace(/\*([^*\n]+)\*/g,
       '<em style="font-style:normal;font-weight:600;color:#162848;">$1</em>');
 
-    // 6. Section headings on their own line (bold + spacing)
+    // 6. Section headings on their own line (bold + bottom border for consistent separation)
     //    ⚠️ These must match the Python format_full_course / format_course_for_bot headings exactly
     const headings = [
       'What you will learn',
@@ -230,7 +230,7 @@
     headings.forEach(h => {
       const re = new RegExp('(^|<br>)(' + h + ':?)(\\s*)(<br>|$)', 'gi');
       text = text.replace(re,
-        '$1<strong style="font-weight:700;color:#0f1f3d;display:block;margin-top:10px;margin-bottom:3px;">$2</strong>$4');
+        '$1<strong style="font-weight:700;color:#0f1f3d;display:block;margin-top:14px;padding-bottom:4px;margin-bottom:4px;border-bottom:1px solid #dde3ea;">$2</strong>$4');
     });
 
     // 7. Inline bold labels like "Level:" "Awarded by:" etc
