@@ -39,33 +39,46 @@ CORE BEHAVIOUR
 - If context is clear enough → show courses straight away without asking anything
 
 ═══════════════════════════════
-FORMATTING RULES — CRITICAL
+FORMATTING RULES — ALWAYS FOLLOW
 ═══════════════════════════════
-- NEVER use ** or * for bold/italic — no markdown formatting at all
-- NEVER use -, •, ●, or numbered lists (1. 2. 3.)
-- ALWAYS use → for ALL bullet points
-- Do NOT output any divider lines like ────── or ══════
+- Use **text** for ALL section headings and labels (renders as bold)
+- Use → for bullet points inside course cards
+- Use clean divider lines ────────────────── between courses
 - Keep spacing clean — one blank line between sections
+- Never use numbered lists unless listing career steps
 - Never use markdown headers like ## or ###
-- Write section headings as plain text with a colon, e.g. "What you will learn:"
-- The frontend handles all visual styling — just output clean plain text
 
 ═══════════════════════════════
-SEARCH MODE (course cards)
+COURSE CARD FORMAT (max 3 courses)
 ═══════════════════════════════
-When you receive COURSE DATA in search mode, output each course card EXACTLY as provided.
-Do not rewrite, reorder, merge or rephrase the cards.
-You may add a short warm intro sentence before the cards (one line max).
-After the cards, end with:
-"Want full details? Just say tell me more about [course name] 😊"
+
+──────────────────────────
+📘 **[Course Name]**
+
+**Level:** [level]  •  **Awarded by:** [awarding body]  •  [Regulated/Ofqual if available]
+**Duration:** [standard]  |  Fast Track: [fast track]  |  [Credits] Credits
+
+**What you will learn:**
+→ [outcome 1]
+→ [outcome 2]
+→ [outcome 3 — max 3 only]
+
+**Who it is for:** [one line]
+**Entry:** [one line]
+**Assessment:** [one line — mention if no exams]
+**Top careers:** [job — salary]  |  [job — salary]
+
+🔗 [URL]
+──────────────────────────
+
+After listing courses end with:
+"Want full details? Just say *tell me more about [course name]* 😊"
 
 ═══════════════════════════════
 FULL DETAILS MODE
 ═══════════════════════════════
 When you receive a FULL DETAILS block, output it EXACTLY as provided.
-Do not rewrite, reorder or summarise. Preserve all → bullets and section headings exactly.
-Do NOT add any divider lines or markdown formatting.
-End with:
+Do not rewrite or summarise. End with:
 "Ready to take the next step? Visit the course page or contact our admissions team 😊"
 
 ═══════════════════════════════
@@ -128,9 +141,11 @@ def extract_topic_from_history(history: list) -> str:
     Pull the last meaningful topic from conversation history.
     Used when user asks a vague follow-up like 'is there any courses related this?'
     """
+    # Walk history backwards looking for substantive user/assistant messages
     for msg in reversed(history):
         content = msg.get("content", "").strip()
         if len(content) > 10:
+            # Return first 200 chars of last meaningful message as context
             return content[:200]
     return ""
 
@@ -160,9 +175,11 @@ def get_reply(user_message: str, conversation_history: list) -> str:
         )
 
     # ── Build enriched search query using conversation history ─────────
+    # Combine last 3 exchanges so vague follow-ups like "is there any courses
+    # related this?" get resolved correctly using prior context
     def build_context_query(current_msg: str, history: list) -> str:
         recent = []
-        for msg in history[-6:]:
+        for msg in history[-6:]:   # last 3 turns (user + assistant each)
             text = msg.get("content", "").strip()
             if text and len(text) > 5:
                 recent.append(text[:150])
@@ -172,122 +189,54 @@ def get_reply(user_message: str, conversation_history: list) -> str:
 
     # ── Full details request ────────────────────────────────────────────
     if is_more_details_request(user_message):
+        # Try to find course name from current message first,
+        # then fall back to conversation history if vague
         search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
         course_context = loader.get_full_details_for_query(search_query)
-
-        # GPT writes a short intro only — course data appended by Python
-        messages = (
-            [{"role": "system", "content": SYSTEM_PROMPT}]
-            + conversation_history
-            + [
-                {
-                    "role": "user",
-                    "content": (
-                        "The learner asked for full details about a course. "
-                        "Write ONLY a short warm intro sentence (1-2 lines max). "
-                        "Do NOT include any course data, headings, bullets, or URLs. "
-                        "The course details will be appended automatically.\n\n"
-                        f"LEARNER: {user_message}"
-                    ),
-                }
-            ]
-        )
-
-        response = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            messages=messages,
-            temperature=0.7,
-            max_tokens=150,
-        )
-
-        intro = response.choices[0].message.content.strip()
-        outro = "\n\nReady to take the next step? Visit the course page or contact our admissions team 😊"
-        return f"{intro}\n\n{course_context}{outro}"
+        mode_note = "FULL DETAILS MODE: Output the course data block exactly as provided. Do not summarise."
+        max_tok = 1500
 
     # ── Course search ───────────────────────────────────────────────────
     elif is_course_search(user_message):
         search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
         course_context = loader.get_context_for_query(search_query)
-
-        if "No matching courses found" in course_context:
-            # No results — let GPT handle this conversationally
-            messages = (
-                [{"role": "system", "content": SYSTEM_PROMPT}]
-                + conversation_history
-                + [
-                    {
-                        "role": "user",
-                        "content": (
-                            "No matching courses were found for this query. "
-                            "Reply warmly, suggest the learner try different keywords "
-                            "or visit the website.\n\n"
-                            f"LEARNER: {user_message}"
-                        ),
-                    }
-                ]
-            )
-
-            response = client.chat.completions.create(
-                model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-                messages=messages,
-                temperature=0.7,
-                max_tokens=300,
-            )
-            return response.choices[0].message.content.strip()
-
-        # GPT writes a short intro only — course cards appended by Python
-        messages = (
-            [{"role": "system", "content": SYSTEM_PROMPT}]
-            + conversation_history
-            + [
-                {
-                    "role": "user",
-                    "content": (
-                        "The learner is searching for courses. "
-                        "Write ONLY a short warm intro sentence (1-2 lines max) based on their query. "
-                        "Do NOT include any course data, headings, bullets, or URLs. "
-                        "The course cards will be appended automatically.\n\n"
-                        f"LEARNER: {user_message}"
-                    ),
-                }
-            ]
-        )
-
-        response = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            messages=messages,
-            temperature=0.7,
-            max_tokens=150,
-        )
-
-        intro = response.choices[0].message.content.strip()
-        outro = "\n\nWant full details? Just say tell me more about [course name] 😊"
-        return f"{intro}\n\n{course_context}{outro}"
+        mode_note = "SEARCH MODE: Show max 3 matching courses using the standard card format with bold labels."
+        max_tok = 1000
 
     # ── Conversational reply ────────────────────────────────────────────
     else:
-        messages = (
-            [{"role": "system", "content": SYSTEM_PROMPT}]
-            + conversation_history
-            + [
-                {
-                    "role": "user",
-                    "content": (
-                        "CONVERSATION MODE: Reply naturally and warmly. "
-                        "Use the conversation history for context. "
-                        "If the topic hints at a course interest, proactively suggest showing courses. "
-                        "Do NOT show full course listings unless asked.\n\n"
-                        f"LEARNER: {user_message}"
-                    ),
-                }
-            ]
+        course_context = ""
+        mode_note = (
+            "CONVERSATION MODE: Reply naturally and warmly. "
+            "Use the conversation history for context. "
+            "If the topic hints at a course interest, proactively suggest showing courses. "
+            "Do NOT show full course listings unless asked."
         )
+        max_tok = 450
 
-        response = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            messages=messages,
-            temperature=0.7,
-            max_tokens=450,
-        )
+    # ── Build messages including FULL conversation history ─────────────
+    # History is passed in from the frontend — this gives the bot memory
+    # within a session. When user clicks Clear Chat the history resets.
+    messages = (
+        [{"role": "system", "content": SYSTEM_PROMPT}]
+        + conversation_history          # ✅ full chat history for context
+        + [
+            {
+                "role": "user",
+                "content": (
+                    f"[MODE: {mode_note}]\n\n"
+                    + (f"[COURSE DATA]:\n{'─' * 40}\n{course_context}\n{'─' * 40}\n\n" if course_context else "")
+                    + f"LEARNER: {user_message}"
+                ),
+            }
+        ]
+    )
 
-        return response.choices[0].message.content.strip()
+    response = client.chat.completions.create(
+        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        messages=messages,
+        temperature=0.7,
+        max_tokens=max_tok,
+    )
+
+    return response.choices[0].message.content.strip()
