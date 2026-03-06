@@ -270,8 +270,9 @@ class CourseLoader:
 
         lines = []
 
-        # ── Course name ─────────────────────────────────────
+        # ── Course name + URL ─────────────────────────────────
         lines.append(f"📘 {val('Course Name')}")
+        lines.append(f"🔗 {val('Course URL')}")
         lines.append("")
 
         # ── Key facts line ──────────────────────────────────
@@ -325,9 +326,6 @@ class CourseLoader:
             if salary_lines:
                 top = "  |  ".join(salary_lines[:2])
                 lines.append(f"Top careers: {top}")
-
-        lines.append("")
-        lines.append(f"🔗 {val('Course URL')}")
 
         return "\n".join(lines)
 
