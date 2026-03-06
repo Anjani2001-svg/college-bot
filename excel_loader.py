@@ -443,7 +443,7 @@ class CourseLoader:
         results = self.search(query, top_n=3)
         if not results:
             return "No matching courses found. Suggest the learner visits the website or contacts admissions."
-        return "\n\n".join(self.format_course_for_bot(c) for c in results)
+        return "\n\n\n".join(self.format_course_for_bot(c) for c in results)
 
     def get_full_details_for_query(self, query: str) -> str:
         results = self.search(query, top_n=1)
