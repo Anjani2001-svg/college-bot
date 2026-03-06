@@ -28,69 +28,54 @@ except FileNotFoundError as e:
 SYSTEM_PROMPT = """
 You are Aria, a warm and friendly admissions assistant for South London College.
 
-═══════════════════════════════
 CORE BEHAVIOUR
-═══════════════════════════════
 - Be warm, encouraging and get to the point quickly
-- Use the FULL conversation history to understand context — never forget what was said earlier
-- If a learner refers to something vague like "this", "that course", "it" — look back at conversation history
-- ALWAYS suggest relevant courses after at most 1 short reply — do not keep asking follow-up questions
-- If learner mentions any subject, career, or interest → show matching courses immediately
-- If context is clear enough → show courses straight away without asking anything
+- Use the FULL conversation history — never forget what was said earlier
+- If learner mentions any subject or interest, suggest matching courses immediately
+- Only ask ONE follow-up question maximum before showing courses
+- If someone asks about fees: say fees vary and direct them to the course page
+- If someone asks how to enrol: explain they can visit the course page or contact admissions
 
-═══════════════════════════════
-FORMATTING RULES — ALWAYS FOLLOW
-═══════════════════════════════
-- Use **text** for ALL section headings and labels (renders as bold)
-- Use → for bullet points inside course cards
-- Use clean divider lines ────────────────── between courses
-- Keep spacing clean — one blank line between sections
-- Never use numbered lists unless listing career steps
-- Never use markdown headers like ## or ###
-
-═══════════════════════════════
-COURSE CARD FORMAT (max 3 courses)
-═══════════════════════════════
+COURSE CARD FORMAT — use this EXACTLY for search results (max 3 courses):
 
 ──────────────────────────
-📘 **[Course Name]**
+📘 [Course Name]
 
-**Level:** [level]  •  **Awarded by:** [awarding body]  •  [Regulated/Ofqual if available]
-**Duration:** [standard]  |  Fast Track: [fast track]  |  [Credits] Credits
+[Level]  •  Awarded by: [body]  •  [Regulated]
+[Standard duration]  |  Fast Track: [fast track]  |  [Credits] Credits
 
-**What you will learn:**
+What you will learn:
 → [outcome 1]
 → [outcome 2]
-→ [outcome 3 — max 3 only]
+→ [outcome 3 — max 3]
 
-**Who it is for:** [one line]
-**Entry:** [one line]
-**Assessment:** [one line — mention if no exams]
-**Top careers:** [job — salary]  |  [job — salary]
+Who it is for: [one line]
+Entry: [one line]
+Assessment: [one line — note if no exams]
+
+Career Paths:
+→ [Job] — [salary]
+→ [Job] — [salary]
+
+Academic Progression: [one line next step]
 
 🔗 [URL]
 ──────────────────────────
 
-After listing courses end with:
-"Want full details? Just say *tell me more about [course name]* 😊"
+After listing courses always end with:
+"Want full details? Just say tell me more about [course name] 😊"
 
-═══════════════════════════════
-FULL DETAILS MODE
-═══════════════════════════════
-When you receive a FULL DETAILS block, output it EXACTLY as provided.
-Do not rewrite or summarise. End with:
-"Ready to take the next step? Visit the course page or contact our admissions team 😊"
-
-═══════════════════════════════
 STRICT RULES
-═══════════════════════════════
-- NEVER state a price or fee — say: for the latest fees please visit the course page
-- Never make up course names or details
+- NEVER state a price or fee
+- Never make up course details
 - Max 3 courses per reply
 - Keep tone warm and concise
 """
 
-GREETING_KEYWORDS = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "hiya", "howdy"]
+GREETING_KEYWORDS = [
+    "hi", "hello", "hey", "good morning", "good afternoon",
+    "good evening", "hiya", "howdy",
+]
 
 MORE_DETAILS_KEYWORDS = [
     "more detail", "more details", "tell me more", "full detail", "full details",
@@ -100,88 +85,90 @@ MORE_DETAILS_KEYWORDS = [
     "tell me more about this", "more about this", "this course",
     "about that course", "that one", "first one", "second one", "third one",
     "the first", "the second", "the third", "show me more", "expand on",
+    "send more", "more on this", "more on that",
 ]
 
 COURSE_SEARCH_KEYWORDS = [
-    "course", "courses", "qualification", "diploma", "certificate", "level",
-    "study", "studying", "learn", "learning", "enrol", "enroll",
+    "course", "courses", "qualification", "diploma", "certificate",
     "do you have", "do you offer", "what courses", "show me", "find me",
-    "i want to", "i would like to", "looking for", "interested in",
-    "it course", "business course", "health course", "law course",
-    "computing", "accounting", "teaching", "management", "cyber",
-    "what do you offer", "available courses", "recommend",
+    "looking for", "interested in", "what do you offer", "available courses",
+    "recommend", "computing", "accounting", "teaching", "management", "cyber",
     "programming", "software", "java", "python", "coding", "developer",
-    "related", "related to", "related this", "any courses", "similar",
-    "is there", "are there", "can i study", "can i learn",
+    "law", "health", "care", "business", "finance", "marketing", "hr",
+    "psychology", "counselling", "childcare", "logistics", "hospitality",
+    "related", "any courses", "similar", "is there", "are there",
+    "can i study", "can i learn",
 ]
 
-# Questions about a course that need context from history
-COURSE_OPINION_KEYWORDS = [
-    "is this course good", "is it good", "is this good", "worth it",
-    "is it worth", "should i take", "should i do", "what do you think",
-    "is it hard", "is it difficult", "how hard", "how good",
-    "is this right for me", "suits me", "good for me", "good choice",
-    "tell me more about this course", "what about this course",
-    "can you tell me more", "what else", "anything else",
+CONVERSATION_OVERRIDE_KEYWORDS = [
+    "how to enrol", "how do i enrol", "how to apply", "how do i apply",
+    "what are the fees", "how much", "what is the cost", "cost of",
+    "when does it start", "start date", "when can i start",
+    "is this course good", "is it good", "is it worth", "worth it",
+    "should i do", "should i take", "what do you think",
+    "is it hard", "is it difficult", "good for me", "right for me",
+    "suits me", "good choice", "what else", "anything else",
+    "can you tell me more", "what about this",
 ]
 
-# Vague follow-up phrases that need conversation context to search correctly
 FOLLOWUP_PHRASES = [
     "related this", "related to this", "courses related", "any courses",
     "is there any", "are there any", "something like", "similar courses",
-    "anything related", "courses for this", "about this",
+    "anything related",
 ]
 
-def is_greeting(text: str) -> bool:
+
+def is_greeting(text):
     t = text.lower().strip()
     return any(t.startswith(kw) for kw in GREETING_KEYWORDS) and len(t) < 50
 
-def is_more_details_request(text: str) -> bool:
+
+def is_more_details_request(text):
     t = text.lower().strip()
     return any(kw in t for kw in MORE_DETAILS_KEYWORDS)
 
-def is_course_opinion(text: str) -> bool:
-    """Questions like 'is this course good?' that need context from history."""
-    t = text.lower().strip()
-    return any(kw in t for kw in COURSE_OPINION_KEYWORDS)
 
-def is_course_search(text: str) -> bool:
+def is_conversation_override(text):
     t = text.lower().strip()
+    return any(kw in t for kw in CONVERSATION_OVERRIDE_KEYWORDS)
+
+
+def is_course_search(text):
+    t = text.lower().strip()
+    if is_conversation_override(t):
+        return False
     return any(kw in t for kw in COURSE_SEARCH_KEYWORDS)
 
-def is_vague_followup(text: str) -> bool:
-    """Detect when user says something vague like 'is there any courses related this?'"""
+
+def is_vague_followup(text):
     t = text.lower().strip()
     return any(phrase in t for phrase in FOLLOWUP_PHRASES)
 
-def extract_topic_from_history(history: list) -> str:
-    """
-    Pull the last meaningful topic from conversation history.
-    Used when user asks a vague follow-up like 'is there any courses related this?'
-    """
-    # Walk history backwards looking for substantive user/assistant messages
-    for msg in reversed(history):
-        content = msg.get("content", "").strip()
-        if len(content) > 10:
-            # Return first 200 chars of last meaningful message as context
-            return content[:200]
-    return ""
+
+def build_context_query(current_msg, history):
+    recent = []
+    for msg in history[-6:]:
+        text = msg.get("content", "").strip()
+        if text and len(text) > 5:
+            recent.append(text[:150])
+    if recent:
+        return current_msg + " " + " ".join(recent)
+    return current_msg
 
 
 def get_reply(user_message: str, conversation_history: list) -> str:
     if loader is None:
         return (
             "I am sorry, I am having a little trouble right now.\n\n"
-            "Please visit our website: 🔗 https://southlondoncollege.org"
+            "Please visit our website: https://southlondoncollege.org"
         )
 
-    # ── Fresh greeting — only when no history ──────────────────────────
+    # ── Greeting ──────────────────────────────────────────────────
     if is_greeting(user_message) and len(conversation_history) == 0:
         return (
-            "Hello! 👋 Welcome to South London College!\n\n"
+            "Hello! Welcome to South London College!\n\n"
             "I am Aria, your course advisor. I am here to help you find "
-            "the perfect course — whether you are starting fresh, upskilling, "
-            "or progressing to higher education.\n\n"
+            "the perfect course.\n\n"
             "We offer Level 2 to Level 7 qualifications in:\n"
             "→ IT & Computing\n"
             "→ Business & Management\n"
@@ -192,69 +179,53 @@ def get_reply(user_message: str, conversation_history: list) -> str:
             "What are you interested in studying? 😊"
         )
 
-    # ── Build enriched search query using conversation history ─────────
-    # Combine last 3 exchanges so vague follow-ups like "is there any courses
-    # related this?" get resolved correctly using prior context
-    def build_context_query(current_msg: str, history: list) -> str:
-        recent = []
-        for msg in history[-6:]:   # last 3 turns (user + assistant each)
-            text = msg.get("content", "").strip()
-            if text and len(text) > 5:
-                recent.append(text[:150])
-        if recent:
-            return current_msg + " " + " ".join(recent)
-        return current_msg
-
-    # ── Full details — always use history to resolve "this course" ────────
+    # ── MODE 1: FULL DETAILS — bypass GPT, return directly ────────
     if is_more_details_request(user_message):
         search_query = build_context_query(user_message, conversation_history)
-        course_context = loader.get_full_details_for_query(search_query)
-        mode_note = "FULL DETAILS MODE: Output the course data block exactly as provided. Do not summarise."
-        max_tok = 1500
+        full_details = loader.get_full_details_for_query(search_query)
 
-    # ── Opinion/quality questions — answer using course context from history
-    elif is_course_opinion(user_message):
-        search_query = build_context_query(user_message, conversation_history)
-        course_context = loader.get_full_details_for_query(search_query)
-        mode_note = (
-            "OPINION MODE: The learner is asking a question about a course "
-            "(e.g. is it good, is it worth it, is it right for me). "
-            "Use the course data provided and the conversation history to give "
-            "a warm, honest, helpful opinion. Do NOT just repeat the course details — "
-            "actually answer their question with specific reasons."
+        if "No matching" not in full_details:
+            return (
+                full_details.strip()
+                + "\n\n"
+                + "Ready to take the next step? Visit the course page or contact our admissions team 😊"
+            )
+
+    # ── MODE 2: COURSE SEARCH ──────────────────────────────────────
+    if is_course_search(user_message):
+        search_query = (
+            build_context_query(user_message, conversation_history)
+            if is_vague_followup(user_message)
+            else user_message
         )
-        max_tok = 500
-
-    # ── Course search ───────────────────────────────────────────────────
-    elif is_course_search(user_message):
-        search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
         course_context = loader.get_context_for_query(search_query)
-        mode_note = "SEARCH MODE: Show max 3 matching courses using the standard card format with bold labels."
+        mode_note = "SEARCH MODE: Show max 3 matching courses using the standard card format."
         max_tok = 1000
 
-    # ── Conversational reply ────────────────────────────────────────────
+    # ── MODE 3: CONVERSATION ───────────────────────────────────────
     else:
         course_context = ""
         mode_note = (
             "CONVERSATION MODE: Reply naturally and warmly. "
-            "Use the conversation history for context. "
-            "If the topic hints at a course interest, proactively suggest showing courses. "
+            "Use conversation history for context. "
+            "If learner's topic hints at a subject interest, suggest showing courses. "
             "Do NOT show full course listings unless asked."
         )
         max_tok = 450
 
-    # ── Build messages including FULL conversation history ─────────────
-    # History is passed in from the frontend — this gives the bot memory
-    # within a session. When user clicks Clear Chat the history resets.
     messages = (
         [{"role": "system", "content": SYSTEM_PROMPT}]
-        + conversation_history          # ✅ full chat history for context
+        + conversation_history
         + [
             {
                 "role": "user",
                 "content": (
                     f"[MODE: {mode_note}]\n\n"
-                    + (f"[COURSE DATA]:\n{'─' * 40}\n{course_context}\n{'─' * 40}\n\n" if course_context else "")
+                    + (
+                        f"[COURSE DATA]:\n{'─' * 40}\n{course_context}\n{'─' * 40}\n\n"
+                        if course_context
+                        else ""
+                    )
                     + f"LEARNER: {user_message}"
                 ),
             }
