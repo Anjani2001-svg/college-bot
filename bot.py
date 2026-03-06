@@ -82,7 +82,7 @@ MORE_DETAILS_KEYWORDS = [
     "more info", "more information", "more about", "tell me about", "details about",
     "everything about", "all about", "describe", "explain more", "give me more",
     "in depth", "in-depth", "full course", "complete details", "all details",
-    "tell me more about this", "more about this", "this course",
+    "tell me more about this", "more about this",
     "about that course", "that one", "first one", "second one", "third one",
     "the first", "the second", "the third", "show me more", "expand on",
     "send more", "more on this", "more on that",
@@ -179,8 +179,21 @@ def get_reply(user_message: str, conversation_history: list) -> str:
             "What are you interested in studying? 😊"
         )
 
+    # ── CONVERSATION OVERRIDE — check FIRST before any course logic ──
+    # Catches: "is this course good?", "how to enrol", fees, opinions
+    # These must never trigger full details or course search
+    if is_conversation_override(user_message):
+        course_context = ""
+        mode_note = (
+            "CONVERSATION MODE: The learner is asking a question that needs "
+            "a conversational answer — e.g. opinion on a course, fees, enrolment. "
+            "Use conversation history to understand context and give a warm, "
+            "helpful, specific reply. Do NOT show course listings."
+        )
+        max_tok = 450
+
     # ── MODE 1: FULL DETAILS — bypass GPT, return directly ────────
-    if is_more_details_request(user_message):
+    elif is_more_details_request(user_message):
         search_query = build_context_query(user_message, conversation_history)
         full_details = loader.get_full_details_for_query(search_query)
 
@@ -192,7 +205,7 @@ def get_reply(user_message: str, conversation_history: list) -> str:
             )
 
     # ── MODE 2: COURSE SEARCH ──────────────────────────────────────
-    if is_course_search(user_message):
+    elif is_course_search(user_message):
         search_query = (
             build_context_query(user_message, conversation_history)
             if is_vague_followup(user_message)
@@ -203,7 +216,7 @@ def get_reply(user_message: str, conversation_history: list) -> str:
         max_tok = 1000
 
     # ── MODE 3: CONVERSATION ───────────────────────────────────────
-    else:
+    elif not is_conversation_override(user_message):
         course_context = ""
         mode_note = (
             "CONVERSATION MODE: Reply naturally and warmly. "
