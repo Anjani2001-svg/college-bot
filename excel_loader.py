@@ -203,102 +203,103 @@ class CourseLoader:
 
     def format_full_course(self, course: dict) -> str:
         """
-        Full details format — no truncation, bullet points, all sections.
-        Used when learner asks for more details about a specific course.
+        Full details — Option B Minimal & Modern style.
+        Clean, arrow bullets, no heavy separators.
         """
         def val(key):
             return course.get(key, "").strip()
 
+        def arrow_lines(text):
+            lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
+            if len(lines) <= 1:
+                return text.strip()
+            return "\n".join(f"→ {l}" for l in lines)
+
         lines = []
 
-        # ── Header ──────────────────────────────────────────
-        lines.append(f"📘 {val('Course Name')}")
-        lines.append(f"🔗 {val('Course URL')}")
+        # Header
+        lines.append(f"📘 {val('Course Name').upper()}")
         lines.append("")
 
-        # ── Qualification Details ────────────────────────────
-        lines.append("📋 *QUALIFICATION DETAILS*")
-        lines.append("──────────────────────────")
-        if val("Qualification Level"):       lines.append(f"• Level:                  {val('Qualification Level')}")
-        if val("Course Qualification Type"): lines.append(f"• Type:                   {val('Course Qualification Type')}")
-        if val("Awarded by"):                lines.append(f"• Awarded by:             {val('Awarded by')}")
-        if val("Qualification Number"):      lines.append(f"• Qualification Number:   {val('Qualification Number')}")
+        # Key facts line
+        facts = []
+        if val("Qualification Level"):  facts.append(val("Qualification Level"))
+        if val("Awarded by"):           facts.append(val("Awarded by"))
         if val("Regulated by"):
             reg = val("Regulated by").split("\n")[0].strip()
-            lines.append(f"• Regulated by:           {reg}")
-        if val("Number of Credits"):         lines.append(f"• Number of Credits:      {val('Number of Credits')}")
+            if reg: facts.append(reg)
+        if facts:
+            lines.append("🎓  " + "  •  ".join(facts))
+
+        # Duration line
+        dur = []
+        if val("Standard Duration"):    dur.append(val("Standard Duration"))
+        if val("Fast Track Duration"):  dur.append(f"Fast Track: {val('Fast Track Duration')}")
+        if val("Access Duration"):      dur.append(f"Access: {val('Access Duration')}")
+        if val("Number of Credits"):    dur.append(f"{val('Number of Credits')}")
+        if dur:
+            lines.append("⏱️  " + "  •  ".join(dur))
+
+        # GLH / TQT
+        hc = []
+        if val("Guided Learning Hours"):    hc.append(f"GLH: {val('Guided Learning Hours')}")
+        if val("Total Qualification Time"): hc.append(f"TQT: {val('Total Qualification Time')}")
+        if val("Qualification Number"):     hc.append(f"Qual No: {val('Qualification Number')}")
+        if hc:
+            lines.append("📊  " + "  •  ".join(hc))
+
         lines.append("")
 
-        # ── Duration & Hours ─────────────────────────────────
-        lines.append("⏱️ *DURATION & HOURS*")
-        lines.append("──────────────────────────")
-        if val("Standard Duration"):         lines.append(f"• Standard Duration:      {val('Standard Duration')}")
-        if val("Fast Track Duration"):       lines.append(f"• Fast Track Duration:    {val('Fast Track Duration')}")
-        if val("Access Duration"):           lines.append(f"• Access Period:          {val('Access Duration')}")
-        if val("Guided Learning Hours"):     lines.append(f"• Guided Learning Hours:  {val('Guided Learning Hours')}")
-        if val("Total Qualification Time"):  lines.append(f"• Total Qualification Time: {val('Total Qualification Time')}")
-        lines.append("")
-
-        # ── Course Overview ──────────────────────────────────
+        # Overview — 2 sentence summary + link
         if val("Course Overview"):
-            lines.append("📖 *COURSE OVERVIEW*")
-            lines.append("──────────────────────────")
-            # Summary = first 2 sentences + link
+            lines.append("Overview")
             sentences = val("Course Overview").replace("\n", " ").split(". ")
             summary = ". ".join(sentences[:2]).strip()
-            if not summary.endswith("."):
-                summary += "."
+            if not summary.endswith("."): summary += "."
             lines.append(summary)
-            lines.append(f"\n👉 View full course details: {val('Course URL')}")
+            lines.append(f"👉 {val('Course URL')}")
             lines.append("")
 
-        # ── Learning Outcomes ────────────────────────────────
+        # Learning Outcomes
         if val("Learning Outcomes"):
-            lines.append("*LEARNING OUTCOMES*")
-            lines.append("──────────────────────────")
-            lines.append(_bullet_lines(val("Learning Outcomes")))
+            lines.append("What you will learn")
+            lines.append(arrow_lines(val("Learning Outcomes")))
             lines.append("")
 
-        # ── Who Is This For ──────────────────────────────────
+        # Who it is for
         if val("Who is This Certification For?"):
-            lines.append("*WHO IS THIS FOR?*")
-            lines.append("──────────────────────────")
-            lines.append(_bullet_lines(val("Who is This Certification For?")))
+            lines.append("Who it is for")
+            lines.append(arrow_lines(val("Who is This Certification For?")))
             lines.append("")
 
-        # ── Entry Requirements ───────────────────────────────
+        # Entry Requirements
         if val("Entry Requirements"):
-            lines.append("*ENTRY REQUIREMENTS*")
-            lines.append("──────────────────────────")
-            lines.append(_bullet_lines(val("Entry Requirements")))
+            lines.append("Entry Requirements")
+            lines.append(arrow_lines(val("Entry Requirements")))
             lines.append("")
 
-        # ── Method of Assessment ─────────────────────────────
+        # Assessment
         if val("Method of Assessment"):
-            lines.append("*METHOD OF ASSESSMENT*")
-            lines.append("──────────────────────────")
-            lines.append(_bullet_lines(val("Method of Assessment")))
+            lines.append("Assessment")
+            lines.append(arrow_lines(val("Method of Assessment")))
             lines.append("")
 
-        # ── Certification ────────────────────────────────────
+        # Certification
         if val("Certification"):
-            lines.append("*CERTIFICATION*")
-            lines.append("──────────────────────────")
-            lines.append(_bullet_lines(val("Certification")))
+            lines.append("Certification")
+            lines.append(arrow_lines(val("Certification")))
             lines.append("")
 
-        # ── Career Progression ───────────────────────────────
+        # Career Progression
         if val("Career Progression"):
-            lines.append("*CAREER PROGRESSION*")
-            lines.append("──────────────────────────")
-            lines.append(_bullet_lines(val("Career Progression")))
+            lines.append("Career Progression")
+            lines.append(arrow_lines(val("Career Progression")))
             lines.append("")
 
-        # ── Academic Progression ─────────────────────────────
+        # Academic Progression
         if val("Academic Progression"):
-            lines.append("*ACADEMIC PROGRESSION*")
-            lines.append("──────────────────────────")
-            lines.append(_bullet_lines(val("Academic Progression")))
+            lines.append("Academic Progression")
+            lines.append(arrow_lines(val("Academic Progression")))
             lines.append("")
 
         return "\n".join(lines)
