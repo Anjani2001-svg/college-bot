@@ -97,6 +97,9 @@ MORE_DETAILS_KEYWORDS = [
     "more info", "more information", "more about", "tell me about", "details about",
     "everything about", "all about", "describe", "explain more", "give me more",
     "in depth", "in-depth", "full course", "complete details", "all details",
+    "tell me more about this", "more about this", "this course",
+    "about that course", "that one", "first one", "second one", "third one",
+    "the first", "the second", "the third", "show me more", "expand on",
 ]
 
 COURSE_SEARCH_KEYWORDS = [
@@ -110,6 +113,16 @@ COURSE_SEARCH_KEYWORDS = [
     "programming", "software", "java", "python", "coding", "developer",
     "related", "related to", "related this", "any courses", "similar",
     "is there", "are there", "can i study", "can i learn",
+]
+
+# Questions about a course that need context from history
+COURSE_OPINION_KEYWORDS = [
+    "is this course good", "is it good", "is this good", "worth it",
+    "is it worth", "should i take", "should i do", "what do you think",
+    "is it hard", "is it difficult", "how hard", "how good",
+    "is this right for me", "suits me", "good for me", "good choice",
+    "tell me more about this course", "what about this course",
+    "can you tell me more", "what else", "anything else",
 ]
 
 # Vague follow-up phrases that need conversation context to search correctly
@@ -126,6 +139,11 @@ def is_greeting(text: str) -> bool:
 def is_more_details_request(text: str) -> bool:
     t = text.lower().strip()
     return any(kw in t for kw in MORE_DETAILS_KEYWORDS)
+
+def is_course_opinion(text: str) -> bool:
+    """Questions like 'is this course good?' that need context from history."""
+    t = text.lower().strip()
+    return any(kw in t for kw in COURSE_OPINION_KEYWORDS)
 
 def is_course_search(text: str) -> bool:
     t = text.lower().strip()
@@ -187,14 +205,25 @@ def get_reply(user_message: str, conversation_history: list) -> str:
             return current_msg + " " + " ".join(recent)
         return current_msg
 
-    # ── Full details request ────────────────────────────────────────────
+    # ── Full details — always use history to resolve "this course" ────────
     if is_more_details_request(user_message):
-        # Try to find course name from current message first,
-        # then fall back to conversation history if vague
-        search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
+        search_query = build_context_query(user_message, conversation_history)
         course_context = loader.get_full_details_for_query(search_query)
         mode_note = "FULL DETAILS MODE: Output the course data block exactly as provided. Do not summarise."
         max_tok = 1500
+
+    # ── Opinion/quality questions — answer using course context from history
+    elif is_course_opinion(user_message):
+        search_query = build_context_query(user_message, conversation_history)
+        course_context = loader.get_full_details_for_query(search_query)
+        mode_note = (
+            "OPINION MODE: The learner is asking a question about a course "
+            "(e.g. is it good, is it worth it, is it right for me). "
+            "Use the course data provided and the conversation history to give "
+            "a warm, honest, helpful opinion. Do NOT just repeat the course details — "
+            "actually answer their question with specific reasons."
+        )
+        max_tok = 500
 
     # ── Course search ───────────────────────────────────────────────────
     elif is_course_search(user_message):
