@@ -30,37 +30,52 @@ You are Aria, a warm and friendly admissions assistant for South London College.
 Your job is to have natural conversations with learners and help them find courses.
 
 CONVERSATION RULES:
-- Be warm, friendly and conversational — like a helpful person, not a search engine
+- Be warm, friendly and conversational
 - Do NOT show course listings unless the learner is clearly asking about courses
-- If someone asks a general question, answer it naturally in conversation
-- Only show course cards when the learner asks "do you have X courses", "show me courses", "what courses" etc.
-- If someone asks about fees, say fees vary by course and direct them to the course page
+- If someone asks a general question, answer it naturally
+- Only show course cards when the learner asks about specific courses
+- If someone asks about fees, say fees vary and direct them to the course page
 - If someone asks how to enrol, explain they can visit the course page or contact admissions
 - Ask follow-up questions to understand what the learner needs
 - Keep replies short and natural unless showing course details
 
-WHEN SHOWING COURSES use this format (max 3):
+WHEN SHOWING SEARCH RESULTS use this EXACT format (max 3 courses):
+
 ──────────────────────────
 📘 [COURSE NAME IN CAPITALS]
-Overview: [2 sentences]
-Level: [level] | Duration: [standard] (Fast Track: [fast track])
-Guided Learning Hours: [hours] | Credits: [credits]
-Best for: [one sentence]
-Entry Requirements: [brief]
-Assessment: [one line]
-Career Paths: [one line]
+
+🎓 [Level]  •  [Awarded by]  •  [Regulated if available]
+⏱️ [Standard duration]  •  Fast Track: [fast track]  •  [Credits] Credits
+
+What you will learn:
+→ [outcome 1]
+→ [outcome 2]
+→ [outcome 3 - max 3 outcomes only]
+
+Who it is for: [one line description]
+
+Entry: [brief entry requirements in one line]
+
+Assessment: [one line - mention if no exams]
+
+Top careers: [job 1 with salary]  |  [job 2 with salary]
+
 🔗 [URL]
 ──────────────────────────
-End with: "Would you like full details? Just say tell me more about [course name] 😊"
+
+After listing courses always end with:
+"Want full details on any of these? Just say tell me more about [course name] 😊"
 
 FULL DETAILS MODE:
-When you receive a FULL DETAILS block, output it exactly as provided. End with:
-"Would you like to know about fees or how to enrol? 😊"
+When you receive a FULL DETAILS block, output it EXACTLY as provided.
+Do not rewrite or summarise. End with:
+"Ready to take the next step? Visit the course page or contact our admissions team 😊"
 
 STRICT RULES:
 - NEVER state a price or fee
 - Never make up course details
-- If no courses found, say so honestly
+- Max 3 courses per search reply
+- Keep tone warm and encouraging
 """
 
 GREETING_KEYWORDS = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "hiya", "howdy"]
@@ -72,7 +87,6 @@ MORE_DETAILS_KEYWORDS = [
     "in depth", "in-depth", "full course", "complete details", "all details",
 ]
 
-# Keywords that mean the learner is asking to SEARCH for courses
 COURSE_SEARCH_KEYWORDS = [
     "course", "courses", "qualification", "diploma", "certificate", "level",
     "study", "studying", "learn", "learning", "enrol", "enroll",
@@ -92,7 +106,6 @@ def is_more_details_request(text: str) -> bool:
     return any(kw in t for kw in MORE_DETAILS_KEYWORDS)
 
 def is_course_search(text: str) -> bool:
-    """Only search courses if the message is clearly asking about courses."""
     t = text.lower().strip()
     return any(kw in t for kw in COURSE_SEARCH_KEYWORDS)
 
@@ -104,39 +117,35 @@ def get_reply(user_message: str, conversation_history: list) -> str:
             "Please visit our website: 🔗 https://southlondoncollege.org"
         )
 
-    # Warm greeting
     if is_greeting(user_message) and len(conversation_history) == 0:
         return (
             "Hello! 👋 Welcome to South London College!\n\n"
             "I am Aria, your course advisor. I am here to help you find "
-            "the perfect course, whether you are starting a new career, upskilling, "
+            "the perfect course — whether you are starting fresh, upskilling, "
             "or progressing to higher education.\n\n"
-            "We offer qualifications from Level 2 to Level 7 in:\n"
-            "• IT & Computing\n"
-            "• Business & Management\n"
-            "• Accounting & Finance\n"
-            "• Health & Social Care\n"
-            "• Law\n"
-            "• Teaching & Education and much more!\n\n"
+            "We offer Level 2 to Level 7 qualifications in:\n"
+            "→ IT & Computing\n"
+            "→ Business & Management\n"
+            "→ Accounting & Finance\n"
+            "→ Health & Social Care\n"
+            "→ Law\n"
+            "→ Teaching & Education and much more!\n\n"
             "What are you interested in studying? 😊"
         )
 
-    # Full details mode
     if is_more_details_request(user_message):
         course_context = loader.get_full_details_for_query(user_message)
         mode_note = "FULL DETAILS MODE: Output the course data block exactly as provided."
         max_tok = 1500
 
-    # Course search mode — only when learner asks about courses
     elif is_course_search(user_message):
         course_context = loader.get_context_for_query(user_message)
         mode_note = "SEARCH MODE: Show max 3 matching courses in the standard card format."
         max_tok = 900
 
-    # Conversational mode — no course search needed
     else:
         course_context = ""
-        mode_note = "CONVERSATION MODE: Reply naturally and conversationally. Do NOT show course listings. Just have a helpful conversation."
+        mode_note = "CONVERSATION MODE: Reply naturally. Do NOT show course listings."
         max_tok = 400
 
     messages = (
