@@ -377,8 +377,7 @@ class CourseLoader:
         lines.append("")
 
         # ── Duration & Hours ────────────────────────────────
-        lines.append("Duration & Hours")
-        lines.append("──────────────────────────")
+        lines.append("Duration & Hours:")
         if val("Standard Duration"):        lines.append(f"→ Standard: {val('Standard Duration')}")
         if val("Fast Track Duration"):      lines.append(f"→ Fast Track: {val('Fast Track Duration')}")
         if val("Access Duration"):          lines.append(f"→ Access Period: {val('Access Duration')}")
@@ -389,8 +388,7 @@ class CourseLoader:
 
         # ── Overview ────────────────────────────────────────
         if val("Course Overview"):
-            lines.append("Overview")
-            lines.append("──────────────────────────")
+            lines.append("Overview:")
             sentences = val("Course Overview").replace("\n", " ").split(". ")
             summary = ". ".join(sentences[:2]).strip()
             if not summary.endswith("."):
@@ -401,29 +399,25 @@ class CourseLoader:
 
         # ── Learning Outcomes ───────────────────────────────
         if val("Learning Outcomes"):
-            lines.append("What you will learn")
-            lines.append("──────────────────────────")
+            lines.append("What you will learn:")
             lines.append(_bullet(val("Learning Outcomes")))
             lines.append("")
 
         # ── Who it is for ───────────────────────────────────
         if val("Who is This Certification For?"):
-            lines.append("Who it is for")
-            lines.append("──────────────────────────")
+            lines.append("Who it is for:")
             lines.append(_bullet(val("Who is This Certification For?")))
             lines.append("")
 
         # ── Entry Requirements ──────────────────────────────
         if val("Entry Requirements"):
-            lines.append("Entry Requirements")
-            lines.append("──────────────────────────")
+            lines.append("Entry Requirements:")
             lines.append(_bullet(val("Entry Requirements")))
             lines.append("")
 
         # ── Method of Assessment (concise — main methods only) ──
         if val("Method of Assessment"):
-            lines.append("Method of Assessment")
-            lines.append("──────────────────────────")
+            lines.append("Method of Assessment:")
             methods = _extract_assessment_methods(val("Method of Assessment"))
             lines.append("\n".join(f"→ {m}" for m in methods))
             assess_lower = val("Method of Assessment").lower()
@@ -433,15 +427,13 @@ class CourseLoader:
 
         # ── Certification ───────────────────────────────────
         if val("Certification"):
-            lines.append("Certification")
-            lines.append("──────────────────────────")
+            lines.append("Certification:")
             lines.append(_bullet(val("Certification")))
             lines.append("")
 
         # ── Career Progression (intro + prospects) ──────────
         if val("Career Progression"):
-            lines.append("Career Progression")
-            lines.append("──────────────────────────")
+            lines.append("Career Progression:")
 
             intro = _extract_career_intro(val("Career Progression"), max_sentences=3)
             if intro:
@@ -457,7 +449,6 @@ class CourseLoader:
         # ── Academic Progression (clean pathway list) ───────
         if val("Academic Progression"):
             lines.append("Possible Academic Progression Pathway:")
-            lines.append("──────────────────────────")
             pathway_lines = _extract_pathway_lines(val("Academic Progression"))
             lines.append("\n".join(f"→ {p}" for p in pathway_lines))
             lines.append("")
