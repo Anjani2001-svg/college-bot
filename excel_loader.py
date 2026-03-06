@@ -100,6 +100,95 @@ def _first_sentences(text: str, n: int = 2) -> str:
     return result
 
 
+def _extract_assessment_methods(text: str) -> list:
+    """
+    Pull only the core assessment method names from the full assessment text.
+    Strips verbose explanations, keeping just the distinct methods.
+    """
+    text_lower = text.lower()
+    # Known method patterns to detect
+    known_methods = [
+        "portfolio of evidence",
+        "written assignments",
+        "written assignment",
+        "case studies",
+        "case study",
+        "practical assessment",
+        "practical assessments",
+        "work-based project",
+        "work based project",
+        "reflective journal",
+        "reflective journals",
+        "professional discussion",
+        "professional discussions",
+        "observation",
+        "observations",
+        "online examination",
+        "online exam",
+        "multiple choice",
+        "short answer questions",
+        "research project",
+        "research projects",
+        "presentation",
+        "presentations",
+        "report writing",
+        "reports",
+        "coursework",
+        "self-assessment",
+        "peer assessment",
+        "workplace evidence",
+        "witness testimony",
+    ]
+    found = []
+    seen_lower = set()
+    for method in known_methods:
+        if method in text_lower:
+            # Normalise singular form for dedup
+            base = method.rstrip("s").rstrip("e").rstrip("i")  # rough dedup
+            if base not in seen_lower:
+                seen_lower.add(base)
+                # Title-case the method
+                found.append(method.title())
+
+    # Fallback: if nothing matched, pull first 2 sentences as a brief summary
+    if not found:
+        lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
+        if lines:
+            return lines[:2]
+
+    return found
+
+
+def _extract_career_intro(text: str, max_sentences: int = 3) -> str:
+    """
+    Return the first few sentences that describe the career context
+    (i.e. lines without salary figures).
+    """
+    lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
+    intro_parts = []
+    for line in lines:
+        if "£" in line or "salary" in line.lower():
+            continue  # skip salary lines — those go in prospects
+        intro_parts.append(line)
+        if len(intro_parts) >= max_sentences:
+            break
+    return " ".join(intro_parts).strip()
+
+
+def _extract_career_prospects(text: str, max_roles: int = 6) -> list:
+    """
+    Return lines that contain job-role/salary info (£ symbol or 'salary').
+    Falls back to short lines that look like job titles.
+    """
+    lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
+    salary_lines = [l for l in lines if "£" in l or "salary" in l.lower()]
+    if salary_lines:
+        return salary_lines[:max_roles]
+    # Fallback: lines that look like job titles (short, no full-stop heavy prose)
+    role_lines = [l for l in lines if len(l) < 100 and not l.endswith(".")]
+    return role_lines[:max_roles]
+
+
 class CourseLoader:
     def __init__(self, filepath: str = "courses.xlsx"):
         if not Path(filepath).exists():
@@ -265,18 +354,21 @@ class CourseLoader:
         return "\n".join(lines)
 
     def format_full_course(self, course: dict) -> str:
-        """Full details — Option B Minimal & Modern with arrow bullets, no truncation."""
+        """
+        Full details — professional, structured format for conversational bot.
+        Designed for clarity and readability with arrow bullets.
+        """
         def val(key):
             return course.get(key, "").strip()
 
         lines = []
 
-        # Header
+        # ── Header ──────────────────────────────────────────
         lines.append(f"📘 {val('Course Name')}")
         lines.append(f"🔗 {val('Course URL')}")
         lines.append("")
 
-        # Key facts
+        # ── Key facts ───────────────────────────────────────
         facts = []
         if val("Qualification Level"):  facts.append(val("Qualification Level"))
         if val("Awarded by"):           facts.append(f"Awarded by: {val('Awarded by')}")
@@ -289,7 +381,7 @@ class CourseLoader:
             lines.append(f"Qualification No: {val('Qualification Number')}")
         lines.append("")
 
-        # Duration & hours
+        # ── Duration & Hours ────────────────────────────────
         lines.append("⏱️ Duration & Hours")
         lines.append("──────────────────────────")
         if val("Standard Duration"):        lines.append(f"  Standard:              {val('Standard Duration')}")
@@ -300,6 +392,7 @@ class CourseLoader:
         if val("Number of Credits"):        lines.append(f"  Credits:               {val('Number of Credits')}")
         lines.append("")
 
+        # ── Overview ────────────────────────────────────────
         if val("Course Overview"):
             lines.append("Overview")
             lines.append("──────────────────────────")
@@ -310,46 +403,86 @@ class CourseLoader:
             lines.append(f"👉 Full details: {val('Course URL')}")
             lines.append("")
 
+        # ── Learning Outcomes ───────────────────────────────
         if val("Learning Outcomes"):
-            lines.append("What you will learn")
+            lines.append("What You Will Learn")
             lines.append("──────────────────────────")
             lines.append(_bullet(val("Learning Outcomes")))
             lines.append("")
 
+        # ── Who It Is For ───────────────────────────────────
         if val("Who is This Certification For?"):
-            lines.append("Who it is for")
+            lines.append("Who It Is For")
             lines.append("──────────────────────────")
             lines.append(_bullet(val("Who is This Certification For?")))
             lines.append("")
 
+        # ── Entry Requirements ──────────────────────────────
         if val("Entry Requirements"):
             lines.append("Entry Requirements")
             lines.append("──────────────────────────")
             lines.append(_bullet(val("Entry Requirements")))
             lines.append("")
 
+        # ── Method of Assessment (concise — main methods only) ──
         if val("Method of Assessment"):
             lines.append("Method of Assessment")
             lines.append("──────────────────────────")
-            lines.append(_bullet(val("Method of Assessment")))
+            methods = _extract_assessment_methods(val("Method of Assessment"))
+            if methods:
+                lines.append("\n".join(f"→ {m}" for m in methods))
+            # Append "No exams" note if relevant
+            assess_lower = val("Method of Assessment").lower()
+            if "no exam" in assess_lower or "no formal exam" in assess_lower:
+                lines.append("→ No formal examinations required")
             lines.append("")
 
+        # ── Certification ───────────────────────────────────
         if val("Certification"):
             lines.append("Certification")
             lines.append("──────────────────────────")
             lines.append(_bullet(val("Certification")))
             lines.append("")
 
+        # ── Career Progression (intro paragraph + prospects) ──
         if val("Career Progression"):
             lines.append("Career Progression")
             lines.append("──────────────────────────")
-            lines.append(_bullet(val("Career Progression")))
+
+            # Short introductory paragraph (non-salary context lines)
+            intro = _extract_career_intro(val("Career Progression"), max_sentences=3)
+            if intro:
+                lines.append(intro)
+                lines.append("")
+
+            # Career Prospects — job roles with salaries
+            prospects = _extract_career_prospects(val("Career Progression"), max_roles=6)
+            if prospects:
+                lines.append("Career Prospects:")
+                lines.append("\n".join(f"→ {p}" for p in prospects))
             lines.append("")
 
+        # ── Academic Progression (clean pathway list) ───────
         if val("Academic Progression"):
-            lines.append("Academic Progression")
+            lines.append("Possible Academic Progression Pathway:")
             lines.append("──────────────────────────")
-            lines.append(_bullet(val("Academic Progression")))
+            acad_lines = [l.strip() for l in val("Academic Progression").splitlines() if l.strip()]
+            # Filter to meaningful pathway lines (skip generic intro prose)
+            pathway_lines = []
+            for line in acad_lines:
+                low = line.lower()
+                # Keep lines that mention levels, steps, degrees, or qualifications
+                if any(kw in low for kw in [
+                    "level", "step", "degree", "bachelor", "master", "diploma",
+                    "certificate", "hnd", "hnc", "foundation", "top-up", "top up",
+                    "pgce", "postgraduate", "undergraduate", "university",
+                    "progression", "→", "ba ", "bsc", "mba", "msc",
+                ]):
+                    pathway_lines.append(line)
+            # If filtering left nothing useful, include all lines
+            if not pathway_lines:
+                pathway_lines = acad_lines
+            lines.append("\n".join(f"→ {p}" for p in pathway_lines))
             lines.append("")
 
         return "\n".join(lines)
