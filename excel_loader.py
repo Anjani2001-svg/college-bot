@@ -261,6 +261,7 @@ class CourseLoader:
 
     # ─────────────────────────────────────────────────────────
     # Search card (max 3 courses) — used in SEARCH MODE
+    # Outputs the EXACT display-ready card — GPT passes through verbatim
     # ─────────────────────────────────────────────────────────
 
     def format_course_for_bot(self, course: dict) -> str:
@@ -269,81 +270,64 @@ class CourseLoader:
 
         lines = []
 
-        lines.append(f"COURSE: {val('Course Name')}")
-        lines.append(f"URL: {val('Course URL')}")
+        # ── Course name ─────────────────────────────────────
+        lines.append(f"📘 {val('Course Name')}")
+        lines.append("")
 
+        # ── Key facts line ──────────────────────────────────
         facts = []
-        if val("Qualification Level"):       facts.append(f"Level: {val('Qualification Level')}")
-        if val("Course Qualification Type"): facts.append(f"Type: {val('Course Qualification Type')}")
-        if val("Awarded by"):                facts.append(f"Awarded by: {val('Awarded by')}")
+        if val("Qualification Level"):  facts.append(f"Level: {val('Qualification Level')}")
+        if val("Awarded by"):           facts.append(f"Awarded by: {val('Awarded by')}")
         if val("Regulated by"):
             reg = val("Regulated by").split("\n")[0].strip()
             if reg: facts.append(f"Regulated: {reg}")
         if facts:
-            lines.append(" | ".join(facts))
+            lines.append("  •  ".join(facts))
 
+        # ── Duration line ───────────────────────────────────
         dur = []
-        if val("Standard Duration"):         dur.append(f"Standard: {val('Standard Duration')}")
-        if val("Fast Track Duration"):       dur.append(f"Fast Track: {val('Fast Track Duration')}")
-        if val("Access Duration"):           dur.append(f"Access: {val('Access Duration')}")
-        if val("Guided Learning Hours"):     dur.append(f"GLH: {val('Guided Learning Hours')}")
-        if val("Total Qualification Time"):  dur.append(f"TQT: {val('Total Qualification Time')}")
-        if val("Number of Credits"):         dur.append(f"Credits: {val('Number of Credits')}")
+        if val("Standard Duration"):    dur.append(f"Standard: {val('Standard Duration')}")
+        if val("Fast Track Duration"):  dur.append(f"Fast Track: {val('Fast Track Duration')}")
+        if val("Number of Credits"):    dur.append(f"{val('Number of Credits')} Credits")
         if dur:
-            lines.append("Duration & Hours: " + " | ".join(dur))
+            lines.append("Duration: " + "  |  ".join(dur))
+        lines.append("")
 
-        if val("Course Overview"):
-            lines.append(f"Overview: {_first_sentences(val('Course Overview'), 2)}")
-
+        # ── Learning Outcomes (max 3) ───────────────────────
         if val("Learning Outcomes"):
-            lo_lines = [l.strip() for l in val("Learning Outcomes").splitlines() if l.strip()]
-            if lo_lines:
+            lo = [l.strip() for l in val("Learning Outcomes").splitlines() if l.strip()]
+            if lo:
                 lines.append("What you will learn:")
-                lines.append(_bullet(val("Learning Outcomes"), max_items=4))
+                for item in lo[:3]:
+                    lines.append(f"→ {item}")
+                lines.append("")
 
+        # ── Who / Entry / Assessment (one-liners) ──────────
         if val("Who is This Certification For?"):
-            who_lines = [l.strip() for l in val("Who is This Certification For?").splitlines() if l.strip()]
-            if len(who_lines) > 1:
-                lines.append("Who it is for:")
-                lines.append(_bullet(val("Who is This Certification For?"), max_items=4))
-            else:
-                lines.append(f"Who it is for: {who_lines[0] if who_lines else ''}")
+            who = [l.strip() for l in val("Who is This Certification For?").splitlines() if l.strip()]
+            lines.append(f"Who it is for: {who[0] if who else ''}")
 
         if val("Entry Requirements"):
-            er_lines = [l.strip() for l in val("Entry Requirements").splitlines() if l.strip()]
-            if len(er_lines) > 1:
-                lines.append("Entry Requirements:")
-                lines.append(_bullet(val("Entry Requirements")))
-            else:
-                lines.append(f"Entry Requirements: {er_lines[0] if er_lines else ''}")
+            er = [l.strip() for l in val("Entry Requirements").splitlines() if l.strip()]
+            lines.append(f"Entry: {er[0] if er else ''}")
 
         if val("Method of Assessment"):
-            assess_text = val("Method of Assessment")
-            assess_summary = _first_sentences(assess_text, 2)
-            lines.append(f"Assessment: {assess_summary}")
+            assess = _first_sentences(val("Method of Assessment"), 1)
+            # Add "no exams" note if relevant
+            if "no exam" in val("Method of Assessment").lower() or "no formal exam" in val("Method of Assessment").lower():
+                assess = assess.rstrip(".") + " (no formal exams)."
+            lines.append(f"Assessment: {assess}")
 
+        # ── Top careers (salary lines, max 2 on one line) ──
         if val("Career Progression"):
             career_lines = [l.strip() for l in val("Career Progression").splitlines() if l.strip()]
-            salary_lines = [l for l in career_lines if "£" in l or "salary" in l.lower()]
-            intro_lines = [l for l in career_lines if "£" not in l and len(l) < 120][:2]
+            salary_lines = [l for l in career_lines if "£" in l]
             if salary_lines:
-                lines.append("Career Progression:")
-                if intro_lines:
-                    lines.append(_bullet("\n".join(intro_lines)))
-                lines.append(_bullet("\n".join(salary_lines[:5])))
-            elif career_lines:
-                lines.append(f"Career Progression: {_first_sentences(val('Career Progression'), 2)}")
+                top = "  |  ".join(salary_lines[:2])
+                lines.append(f"Top careers: {top}")
 
-        if val("Academic Progression"):
-            acad_lines = [l.strip() for l in val("Academic Progression").splitlines() if l.strip()]
-            step_lines = [l for l in acad_lines if l.lower().startswith("step")]
-            intro = _first_sentences(val("Academic Progression"), 1)
-            if step_lines:
-                lines.append("Academic Progression:")
-                lines.append(f"→ {intro}")
-                lines.append(_bullet("\n".join(step_lines[:3])))
-            else:
-                lines.append(f"Academic Progression: {intro}")
+        lines.append("")
+        lines.append(f"🔗 {val('Course URL')}")
 
         return "\n".join(lines)
 
@@ -456,7 +440,7 @@ class CourseLoader:
         return "\n".join(lines)
 
     def get_context_for_query(self, query: str) -> str:
-        results = self.search(query)
+        results = self.search(query, top_n=3)
         if not results:
             return "No matching courses found. Suggest the learner visits the website or contacts admissions."
         return "\n\n".join(self.format_course_for_bot(c) for c in results)
