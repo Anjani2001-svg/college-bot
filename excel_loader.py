@@ -294,15 +294,6 @@ class CourseLoader:
             lines.append("Duration: " + "  |  ".join(dur))
         lines.append("")
 
-        # ── Learning Outcomes (max 3) ───────────────────────
-        if val("Learning Outcomes"):
-            lo = [l.strip() for l in val("Learning Outcomes").splitlines() if l.strip()]
-            if lo:
-                lines.append("What you will learn:")
-                for item in lo[:3]:
-                    lines.append(f"→ {item}")
-                lines.append("")
-
         # ── Who / Entry / Assessment (one-liners) ──────────
         if val("Who is This Certification For?"):
             who = [l.strip() for l in val("Who is This Certification For?").splitlines() if l.strip()]
