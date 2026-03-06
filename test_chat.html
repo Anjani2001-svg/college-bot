@@ -236,7 +236,7 @@
       '📘 <strong style="font-weight:700;color:#0f1f3d;font-size:0.94rem;">$1</strong>');
 
     // 7. Line breaks — preserve blank lines as spacing
-    text = text.replace(/\n{3,}/g, '\n\n');              // cap at 2 blank lines max
+        // cap at 2 blank lines max
     text = text.replace(/\n\n/g, '<br><div style="margin-top:12px;"></div>');  // visible gap
     text = text.replace(/\n/g, '<br>');
 
