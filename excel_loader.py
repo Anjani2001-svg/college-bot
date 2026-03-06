@@ -182,14 +182,18 @@ _PATHWAY_KEYWORDS = [
 
 
 def _extract_pathway_lines(text: str) -> list:
-    """Return only the meaningful progression pathway lines."""
+    """Return only the meaningful progression pathway lines, with no bullet prefixes."""
     all_lines = [l.strip() for l in text.strip().splitlines() if l.strip()]
     pathway_lines = []
     for line in all_lines:
-        low = line.lower()
+        # Strip any bullet prefixes so pathways render as plain text
+        clean = line.lstrip("→•●-–* ").strip()
+        if not clean:
+            continue
+        low = clean.lower()
         if any(kw in low for kw in _PATHWAY_KEYWORDS):
-            pathway_lines.append(line)
-    return pathway_lines if pathway_lines else all_lines
+            pathway_lines.append(clean)
+    return pathway_lines if pathway_lines else [l.lstrip("→•●-–* ").strip() for l in all_lines if l.strip()]
 
 
 # ═══════════════════════════════════════════════════════════
@@ -419,12 +423,11 @@ class CourseLoader:
                 lines.append("\n".join(f"→ {p}" for p in prospects))
             lines.append("")
 
-        # ── Academic Progression (clean pathway list) ───────
+        # ── Academic Progression (plain list, no bullets) ────
         if val("Academic Progression"):
-            lines.append("Possible Academic Progression Pathway:")
             pathway_lines = _extract_pathway_lines(val("Academic Progression"))
-            lines.append("\n".join(f"→ {p}" for p in pathway_lines))
-            lines.append("")
+            lines.append("Possible Academic Progression Pathway:")
+            lines.append("\n".join(pathway_lines))
 
         return "\n".join(lines)
 
