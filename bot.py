@@ -174,48 +174,120 @@ def get_reply(user_message: str, conversation_history: list) -> str:
     if is_more_details_request(user_message):
         search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
         course_context = loader.get_full_details_for_query(search_query)
-        mode_note = "FULL DETAILS MODE: Output the course data EXACTLY as provided below. Do not rewrite, reorder, summarise or add markdown. Preserve every line, arrow and heading as-is."
-        max_tok = 1500
+
+        # GPT writes a short intro only — course data appended by Python
+        messages = (
+            [{"role": "system", "content": SYSTEM_PROMPT}]
+            + conversation_history
+            + [
+                {
+                    "role": "user",
+                    "content": (
+                        "The learner asked for full details about a course. "
+                        "Write ONLY a short warm intro sentence (1-2 lines max). "
+                        "Do NOT include any course data, headings, bullets, or URLs. "
+                        "The course details will be appended automatically.\n\n"
+                        f"LEARNER: {user_message}"
+                    ),
+                }
+            ]
+        )
+
+        response = client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=messages,
+            temperature=0.7,
+            max_tokens=150,
+        )
+
+        intro = response.choices[0].message.content.strip()
+        outro = "\n\nReady to take the next step? Visit the course page or contact our admissions team 😊"
+        return f"{intro}\n\n{course_context}{outro}"
 
     # ── Course search ───────────────────────────────────────────────────
     elif is_course_search(user_message):
         search_query = build_context_query(user_message, conversation_history) if is_vague_followup(user_message) else user_message
         course_context = loader.get_context_for_query(search_query)
-        mode_note = "SEARCH MODE: Output the course cards EXACTLY as provided below. Do not rewrite, merge or rephrase them. You may add ONE short warm intro sentence before the cards. Show max 3 cards."
-        max_tok = 1200
+
+        if "No matching courses found" in course_context:
+            # No results — let GPT handle this conversationally
+            messages = (
+                [{"role": "system", "content": SYSTEM_PROMPT}]
+                + conversation_history
+                + [
+                    {
+                        "role": "user",
+                        "content": (
+                            "No matching courses were found for this query. "
+                            "Reply warmly, suggest the learner try different keywords "
+                            "or visit the website.\n\n"
+                            f"LEARNER: {user_message}"
+                        ),
+                    }
+                ]
+            )
+
+            response = client.chat.completions.create(
+                model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+                messages=messages,
+                temperature=0.7,
+                max_tokens=300,
+            )
+            return response.choices[0].message.content.strip()
+
+        # GPT writes a short intro only — course cards appended by Python
+        messages = (
+            [{"role": "system", "content": SYSTEM_PROMPT}]
+            + conversation_history
+            + [
+                {
+                    "role": "user",
+                    "content": (
+                        "The learner is searching for courses. "
+                        "Write ONLY a short warm intro sentence (1-2 lines max) based on their query. "
+                        "Do NOT include any course data, headings, bullets, or URLs. "
+                        "The course cards will be appended automatically.\n\n"
+                        f"LEARNER: {user_message}"
+                    ),
+                }
+            ]
+        )
+
+        response = client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=messages,
+            temperature=0.7,
+            max_tokens=150,
+        )
+
+        intro = response.choices[0].message.content.strip()
+        outro = "\n\nWant full details? Just say tell me more about [course name] 😊"
+        return f"{intro}\n\n{course_context}{outro}"
 
     # ── Conversational reply ────────────────────────────────────────────
     else:
-        course_context = ""
-        mode_note = (
-            "CONVERSATION MODE: Reply naturally and warmly. "
-            "Use the conversation history for context. "
-            "If the topic hints at a course interest, proactively suggest showing courses. "
-            "Do NOT show full course listings unless asked."
+        messages = (
+            [{"role": "system", "content": SYSTEM_PROMPT}]
+            + conversation_history
+            + [
+                {
+                    "role": "user",
+                    "content": (
+                        "CONVERSATION MODE: Reply naturally and warmly. "
+                        "Use the conversation history for context. "
+                        "If the topic hints at a course interest, proactively suggest showing courses. "
+                        "Do NOT show full course listings unless asked.\n\n"
+                        f"LEARNER: {user_message}"
+                    ),
+                }
+            ]
         )
-        max_tok = 450
 
-    # ── Build messages including FULL conversation history ─────────────
-    messages = (
-        [{"role": "system", "content": SYSTEM_PROMPT}]
-        + conversation_history
-        + [
-            {
-                "role": "user",
-                "content": (
-                    f"[MODE: {mode_note}]\n\n"
-                    + (f"[COURSE DATA — OUTPUT THIS EXACTLY]:\n\n{course_context}\n\n" if course_context else "")
-                    + f"LEARNER: {user_message}"
-                ),
-            }
-        ]
-    )
+        response = client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=messages,
+            temperature=0.7,
+            max_tokens=450,
+        )
 
-    response = client.chat.completions.create(
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-        messages=messages,
-        temperature=0.7,
-        max_tokens=max_tok,
-    )
-
-    return response.choices[0].message.content.strip()
+        return response.choices[0].message.content.strip()
