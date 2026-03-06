@@ -55,6 +55,7 @@ COURSE CARD FORMAT (max 3 courses)
 ═══════════════════════════════
 
 📘 [Course Name]
+🔗 [URL]
 
 Level: [level]  •  Awarded by: [awarding body]  •  [Regulated/Ofqual if available]
 Duration: [standard]  |  Fast Track: [fast track]  |  [Credits] Credits
@@ -69,7 +70,7 @@ Entry: [one line]
 Assessment: [one line — mention if no exams]
 Top careers: [job — salary]  |  [job — salary]
 
-🔗 [URL]
+
 
 After listing courses end with:
 "Want full details? Just say tell me more about [course name] 😊"
