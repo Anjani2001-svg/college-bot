@@ -61,8 +61,6 @@ SYNONYMS = {
     "regulated":      ["regulated by", "ofqual", "regulation"],
     "ofqual":         ["regulated by", "ofqual"],
     "accredited":     ["regulated by", "awarded by", "accredited"],
-    "qualification number": ["qualification number"],
-    "qual number":    ["qualification number"],
 }
 
 
@@ -146,166 +144,137 @@ class CourseLoader:
         return [self.df.iloc[idx].to_dict() for _, idx in scored[:top_n]]
 
     def format_course_for_bot(self, course: dict) -> str:
-        """Brief summary format — used for search results (max 3 courses)."""
+        """Brief summary — used for general search results."""
         def val(key):
             return course.get(key, "").strip()
 
         lines = []
-        lines.append(f"📘 COURSE: {val('Course Name')}")
-        lines.append(f"   URL: {val('Course URL')}")
-        lines.append(f"   Level: {val('Qualification Level')} | Type: {val('Course Qualification Type')} | Awarded by: {val('Awarded by')}")
-
-        qd_parts = []
-        if val("Qualification Number"):  qd_parts.append(f"Qual No: {val('Qualification Number')}")
-        if val("Regulated by"):          qd_parts.append(f"Regulated by: {val('Regulated by')[:80]}")
-        if qd_parts:
-            lines.append(f"   {' | '.join(qd_parts)}")
+        lines.append(f"COURSE: {val('Course Name')}")
+        lines.append(f"URL: {val('Course URL')}")
+        lines.append(f"Level: {val('Qualification Level')} | Type: {val('Course Qualification Type')} | Awarded by: {val('Awarded by')}")
 
         dur_parts = []
         if val("Standard Duration"):    dur_parts.append(f"Standard: {val('Standard Duration')}")
         if val("Fast Track Duration"):  dur_parts.append(f"Fast Track: {val('Fast Track Duration')}")
         if val("Access Duration"):      dur_parts.append(f"Access Period: {val('Access Duration')}")
         if dur_parts:
-            lines.append(f"   Duration — {' | '.join(dur_parts)}")
+            lines.append(f"Duration: {' | '.join(dur_parts)}")
 
         hc_parts = []
-        if val("Guided Learning Hours"):    hc_parts.append(f"Guided Learning Hours: {val('Guided Learning Hours')}")
-        if val("Total Qualification Time"): hc_parts.append(f"Total Qualification Time: {val('Total Qualification Time')}")
+        if val("Guided Learning Hours"):    hc_parts.append(f"GLH: {val('Guided Learning Hours')}")
+        if val("Total Qualification Time"): hc_parts.append(f"TQT: {val('Total Qualification Time')}")
         if val("Number of Credits"):        hc_parts.append(f"Credits: {val('Number of Credits')}")
         if hc_parts:
-            lines.append(f"   {' | '.join(hc_parts)}")
+            lines.append(f"{' | '.join(hc_parts)}")
 
         if val("Course Overview"):
             ov = val("Course Overview")
-            lines.append(f"   Overview: {ov[:400].rsplit(' ', 1)[0]}..." if len(ov) > 400 else f"   Overview: {ov}")
-
-        if val("Learning Outcomes"):
-            lo = val("Learning Outcomes")
-            lines.append(f"   Learning Outcomes: {lo[:400].rsplit(' ', 1)[0]}..." if len(lo) > 400 else f"   Learning Outcomes: {lo}")
+            lines.append(f"Overview: {ov[:350].rsplit(' ', 1)[0]}..." if len(ov) > 350 else f"Overview: {ov}")
 
         if val("Who is This Certification For?"):
             t = val("Who is This Certification For?")
-            lines.append(f"   Best for: {t[:200].rsplit(' ', 1)[0]}..." if len(t) > 200 else f"   Best for: {t}")
+            lines.append(f"Best for: {t[:200].rsplit(' ', 1)[0]}..." if len(t) > 200 else f"Best for: {t}")
 
         if val("Entry Requirements"):
             r = val("Entry Requirements")
-            lines.append(f"   Entry Requirements: {r[:200].rsplit(' ', 1)[0]}..." if len(r) > 200 else f"   Entry Requirements: {r}")
+            lines.append(f"Entry Requirements: {r[:200].rsplit(' ', 1)[0]}..." if len(r) > 200 else f"Entry Requirements: {r}")
 
         if val("Method of Assessment"):
             m = val("Method of Assessment")
-            lines.append(f"   Assessment: {m[:250].rsplit(' ', 1)[0]}..." if len(m) > 250 else f"   Assessment: {m}")
-
-        if val("Certification"):
-            ce = val("Certification")
-            lines.append(f"   Certification: {ce[:200].rsplit(' ', 1)[0]}..." if len(ce) > 200 else f"   Certification: {ce}")
+            lines.append(f"Assessment: {m[:200].rsplit(' ', 1)[0]}..." if len(m) > 200 else f"Assessment: {m}")
 
         if val("Career Progression"):
             c = val("Career Progression")
-            lines.append(f"   Career Paths: {c[:250].rsplit(' ', 1)[0]}..." if len(c) > 250 else f"   Career Paths: {c}")
+            lines.append(f"Career Paths: {c[:200].rsplit(' ', 1)[0]}..." if len(c) > 200 else f"Career Paths: {c}")
 
         if val("Academic Progression"):
             p = val("Academic Progression")
-            lines.append(f"   Academic Progression: {p[:200].rsplit(' ', 1)[0]}..." if len(p) > 200 else f"   Academic Progression: {p}")
+            lines.append(f"Academic Progression: {p[:200].rsplit(' ', 1)[0]}..." if len(p) > 200 else f"Academic Progression: {p}")
 
         return "\n".join(lines)
 
     def format_full_course(self, course: dict) -> str:
         """
-        ✅ FULL DETAILS format — no truncation.
-        Used when learner asks 'tell me more' or 'full details' about a course.
+        Full details — no truncation. Used when learner asks 'tell me more'.
+        Structured exactly as requested by the user.
         """
         def val(key):
             return course.get(key, "").strip()
 
         lines = []
-        lines.append(f"═══════════════════════════════════")
-        lines.append(f"📘 {val('Course Name')}")
-        lines.append(f"═══════════════════════════════════")
-        lines.append(f"🔗 {val('Course URL')}")
-        lines.append("")
 
-        lines.append(f"📋 QUALIFICATION DETAILS")
-        lines.append(f"──────────────────────────")
-        if val("Qualification Level"):       lines.append(f"Level: {val('Qualification Level')}")
-        if val("Course Qualification Type"): lines.append(f"Type: {val('Course Qualification Type')}")
-        if val("Awarded by"):                lines.append(f"Awarded by: {val('Awarded by')}")
-        if val("Qualification Number"):      lines.append(f"Qualification Number: {val('Qualification Number')}")
-        if val("Regulated by"):              lines.append(f"Regulated by: {val('Regulated by')}")
-        lines.append("")
+        # Title & URL
+        lines.append(f"FULL_DETAILS_START")
+        lines.append(f"COURSE_NAME: {val('Course Name')}")
+        lines.append(f"COURSE_URL: {val('Course URL')}")
 
-        lines.append(f"⏱️ DURATION & HOURS")
-        lines.append(f"──────────────────────────")
-        if val("Standard Duration"):         lines.append(f"Standard Duration: {val('Standard Duration')}")
-        if val("Fast Track Duration"):       lines.append(f"Fast Track Duration: {val('Fast Track Duration')}")
-        if val("Access Duration"):           lines.append(f"Access Period: {val('Access Duration')}")
-        if val("Guided Learning Hours"):     lines.append(f"Guided Learning Hours: {val('Guided Learning Hours')}")
-        if val("Total Qualification Time"):  lines.append(f"Total Qualification Time: {val('Total Qualification Time')}")
-        if val("Number of Credits"):         lines.append(f"Number of Credits: {val('Number of Credits')}")
-        lines.append("")
+        # Qualification Details
+        lines.append(f"\nSECTION: QUALIFICATION DETAILS")
+        lines.append(f"Type: {val('Course Qualification Type')}")
+        lines.append(f"Awarded by: {val('Awarded by')}")
+        lines.append(f"Qualification Number: {val('Qualification Number')}")
+        lines.append(f"Regulated by: {val('Regulated by')}")
+        lines.append(f"Number of Credits: {val('Number of Credits')}")
 
+        # Duration & Hours
+        lines.append(f"\nSECTION: DURATION AND HOURS")
+        lines.append(f"Standard Duration: {val('Standard Duration')}")
+        lines.append(f"Fast Track Duration: {val('Fast Track Duration')}")
+        lines.append(f"Access Period: {val('Access Duration')}")
+        lines.append(f"Guided Learning Hours: {val('Guided Learning Hours')}")
+        lines.append(f"Total Qualification Time: {val('Total Qualification Time')}")
+
+        # Course Overview
         if val("Course Overview"):
-            lines.append(f"COURSE OVERVIEW")
-            lines.append(f"──────────────────────────")
+            lines.append(f"\nSECTION: COURSE OVERVIEW")
             lines.append(val("Course Overview"))
-            lines.append("")
 
+        # Learning Outcomes
         if val("Learning Outcomes"):
-            lines.append(f"LEARNING OUTCOMES")
-            lines.append(f"──────────────────────────")
+            lines.append(f"\nSECTION: LEARNING OUTCOMES")
             lines.append(val("Learning Outcomes"))
-            lines.append("")
 
+        # Who Is This For
         if val("Who is This Certification For?"):
-            lines.append(f"WHO IS THIS FOR?")
-            lines.append(f"──────────────────────────")
+            lines.append(f"\nSECTION: WHO IS THIS FOR")
             lines.append(val("Who is This Certification For?"))
-            lines.append("")
 
+        # Entry Requirements
         if val("Entry Requirements"):
-            lines.append(f"ENTRY REQUIREMENTS")
-            lines.append(f"──────────────────────────")
+            lines.append(f"\nSECTION: ENTRY REQUIREMENTS")
             lines.append(val("Entry Requirements"))
-            lines.append("")
 
+        # Method of Assessment
         if val("Method of Assessment"):
-            lines.append(f"METHOD OF ASSESSMENT")
-            lines.append(f"──────────────────────────")
+            lines.append(f"\nSECTION: METHOD OF ASSESSMENT")
             lines.append(val("Method of Assessment"))
-            lines.append("")
 
+        # Certification
         if val("Certification"):
-            lines.append(f"CERTIFICATION")
-            lines.append(f"──────────────────────────")
+            lines.append(f"\nSECTION: CERTIFICATION")
             lines.append(val("Certification"))
-            lines.append("")
 
+        # Career Progression
         if val("Career Progression"):
-            lines.append(f"CAREER PROGRESSION")
-            lines.append(f"──────────────────────────")
+            lines.append(f"\nSECTION: CAREER PROGRESSION")
             lines.append(val("Career Progression"))
-            lines.append("")
 
+        # Academic Progression
         if val("Academic Progression"):
-            lines.append(f"ACADEMIC PROGRESSION")
-            lines.append(f"──────────────────────────")
+            lines.append(f"\nSECTION: ACADEMIC PROGRESSION")
             lines.append(val("Academic Progression"))
-            lines.append("")
 
+        lines.append(f"FULL_DETAILS_END")
         return "\n".join(lines)
 
     def get_context_for_query(self, query: str) -> str:
-        """Brief context for general search queries."""
         results = self.search(query)
         if not results:
             return "No matching courses found. Suggest the learner visits the website or contacts admissions."
         return "\n\n".join(self.format_course_for_bot(c) for c in results)
 
     def get_full_details_for_query(self, query: str) -> str:
-        """
-        ✅ Full details — used when learner asks for more info about a specific course.
-        Returns top 1 match with ALL fields, no truncation.
-        """
         results = self.search(query, top_n=1)
         if not results:
-            return "No matching course found. Suggest the learner visits the website or contacts admissions."
+            return "No matching course found. Suggest the learner visits the website."
         return self.format_full_course(results[0])
