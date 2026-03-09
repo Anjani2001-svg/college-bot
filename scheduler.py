@@ -7,7 +7,7 @@ from apscheduler.jobstores.memory import MemoryJobStore
 logger = logging.getLogger(__name__)
 
 # Read from .env — 10 for testing, 180 for live
-BOT_REPLY_DELAY_SECONDS = int(os.getenv("BOT_REPLY_DELAY_SECONDS", "180"))
+BOT_REPLY_DELAY_SECONDS = int(os.getenv("BOT_REPLY_DELAY_SECONDS", "120"))
 
 _pending: dict[str, dict] = {}
 
