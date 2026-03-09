@@ -41,7 +41,7 @@ COURSE CARD FORMAT — use this EXACTLY for search results (max 3 courses):
 ──────────────────────────
 📘 [Course Name]
 
-• Level: [Level]  •  Awarded by: [body]  •  [Regulated]
+[Level]  •  Awarded by: [body]  •  [Regulated]
 [Standard duration]  |  Fast Track: [fast track]  |  [Credits] Credits
 
 What you will learn:
@@ -92,12 +92,14 @@ COURSE_SEARCH_KEYWORDS = [
     "course", "courses", "qualification", "diploma", "certificate",
     "do you have", "do you offer", "what courses", "show me", "find me",
     "looking for", "interested in", "what do you offer", "available courses",
-    "recommend", "computing", "accounting", "teaching", "management", "cyber",
+    "recommend", "computing", "accounting", "teaching", "teacher", "management", "cyber",
     "programming", "software", "java", "python", "coding", "developer",
     "law", "health", "care", "business", "finance", "marketing", "hr",
     "psychology", "counselling", "childcare", "logistics", "hospitality",
     "related", "any courses", "similar", "is there", "are there",
     "can i study", "can i learn",
+    "i want to learn", "i want to study", "i want to become",
+    "i would like to learn", "i would like to study",
 ]
 
 CONVERSATION_OVERRIDE_KEYWORDS = [
