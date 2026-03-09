@@ -41,7 +41,7 @@ COURSE CARD FORMAT — use this EXACTLY for search results (max 3 courses):
 ──────────────────────────
 📘 [Course Name]
 
-[Level]  •  Awarded by: [body]  •  [Regulated]
+•Level: [Level]  •  Awarded by: [body]  •  [Regulated]
 [Standard duration]  |  Fast Track: [fast track]  |  [Credits] Credits
 
 What you will learn:
